@@ -1,0 +1,1642 @@
+const ComponentFunction = function() {
+// @section:imports @depends:[]
+const React = require('react');
+const { useState, useEffect, useContext, useMemo, useCallback, useRef } = React;
+const { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, StatusBar, ActivityIndicator, FlatList, Dimensions, Image } = require('react-native');
+const { MaterialIcons, Ionicons, MaterialCommunityIcons } = require('@expo/vector-icons');
+const { createBottomTabNavigator } = require('@react-navigation/bottom-tabs');
+const { createStackNavigator } = require('@react-navigation/stack');
+const { useSafeAreaInsets } = require('react-native-safe-area-context');
+const { useQuery, useMutation } = require('platform-hooks');
+const { useShare } = require('platform-hooks');
+// @end:imports
+
+// @section:theme @depends:[]
+const primaryColor = '#1a1a2e';
+const accentColor = '#7c3aed';
+const backgroundColor = '#0a0a1a';
+const cardColor = '#16213e';
+const cardColor2 = '#1e2d4a';
+const textPrimary = '#e2e8f0';
+const textSecondary = '#94a3b8';
+const accentGold = '#f59e0b';
+const accentCrimson = '#dc2626';
+const accentTeal = '#0891b2';
+const designStyle = 'glassmorphic';
+// @end:theme
+
+// @section:navigation-setup @depends:[]
+var Tab = createBottomTabNavigator();
+var Stack = createStackNavigator();
+// @end:navigation-setup
+
+// @section:constants-shadows @depends:[]
+var TAB_MENU_HEIGHT = Platform.OS === 'web' ? 56 : 49;
+var SCROLL_EXTRA_PADDING = 16;
+var WEB_TAB_MENU_PADDING = 90;
+var FAB_SPACING = 16;
+var HEADER_HEIGHT = 60;
+
+var SHADOW_CATALOG = [
+  { key: 'voidmourne', name: 'Voidmourne', power: 95, attack: 78, speed: 45, regen: 60, color: '#7c3aed', secondColor: '#3b0764', element: 'Void', tier: 'S', abilities: ['Void Consume', 'Null Zone', 'Dark Singularity'], description: 'Ancient void entity that devours light itself. Born from the collapse of dying stars.', imageKey: 'dark-void-warrior-purple-armor' },
+  { key: 'shadeveil', name: 'Shadeveil', power: 65, attack: 70, speed: 88, regen: 72, color: '#1d4ed8', secondColor: '#1e3a8a', element: 'Shadow', tier: 'A', abilities: ['Shade Step', 'Veil Cloak', 'Eclipse Strike'], description: 'Master of shadow veils who strikes from invisible angles.', imageKey: 'shadow-ninja-blue-dark' },
+  { key: 'nightshade', name: 'Nightshade', power: 72, attack: 85, speed: 90, regen: 55, color: '#059669', secondColor: '#064e3b', element: 'Poison', tier: 'A', abilities: ['Poison Mist', 'Night Rush', 'Venomblast'], description: 'Swift poisoner who coats blades in deadly nightshade extract.', imageKey: 'green-poison-shadow-fighter' },
+  { key: 'duskbane', name: 'Duskbane', power: 82, attack: 92, speed: 60, regen: 48, color: '#b45309', secondColor: '#78350f', element: 'Curse', tier: 'S', abilities: ['Dusk Curse', 'Bane Seal', 'Twilight Devastator'], description: 'Cursed warrior of dusk who brings ruin to all who face him.', imageKey: 'dark-cursed-warrior-orange-flames' },
+  { key: 'grimveil', name: 'Grimveil', power: 88, attack: 60, speed: 38, regen: 95, color: '#6b7280', secondColor: '#374151', element: 'Iron', tier: 'A', abilities: ['Iron Veil', 'Grim Fortress', 'Undying Shell'], description: 'Indestructible iron guardian who regenerates in the heat of battle.', imageKey: 'iron-armored-tank-shadow-warrior' },
+  { key: 'shadowmere', name: 'Shadowmere', power: 60, attack: 68, speed: 97, regen: 65, color: '#0e7490', secondColor: '#164e63', element: 'Wind', tier: 'A', abilities: ['Phantom Dash', 'Afterimage', 'Storm Surge'], description: 'Fastest Shadow alive, leaving afterimages that confuse enemies.', imageKey: 'fast-wind-shadow-blue-speed' },
+  { key: 'blackthorn', name: 'Blackthorn', power: 78, attack: 95, speed: 55, regen: 52, color: '#15803d', secondColor: '#14532d', element: 'Nature', tier: 'S', abilities: ['Thorn Spike', 'Black Forest', 'Root Entangle'], description: 'Nature-born warrior who summons deadly thorns from the earth.', imageKey: 'dark-forest-shadow-thorns-warrior' },
+  { key: 'ashveil', name: 'Ashveil', power: 75, attack: 80, speed: 70, regen: 62, color: '#dc2626', secondColor: '#7f1d1d', element: 'Fire', tier: 'A', abilities: ['Ash Storm', 'Ember Veil', 'Inferno Burst'], description: 'Born from volcanic ash, masters fire and destruction.', imageKey: 'fire-ash-shadow-warrior-red' },
+  { key: 'soulshade', name: 'Soulshade', power: 85, attack: 72, speed: 58, regen: 88, color: '#9333ea', secondColor: '#581c87', element: 'Soul', tier: 'S', abilities: ['Soul Drain', 'Spirit Bind', 'Essence Steal'], description: 'Drains the life essence of enemies to fuel its own regeneration.', imageKey: 'soul-consuming-purple-shadow' },
+  { key: 'darkspire', name: 'Darkspire', power: 90, attack: 65, speed: 42, regen: 70, color: '#475569', secondColor: '#1e293b', element: 'Dark', tier: 'A', abilities: ['Dark Tower', 'Spire Blast', 'Obsidian Wall'], description: 'Ancient tower guardian who channels dark energy into devastating blasts.', imageKey: 'dark-tower-guardian-shadow' },
+  { key: 'hollowshade', name: 'Hollowshade', power: 70, attack: 75, speed: 80, regen: 58, color: '#a8a29e', secondColor: '#44403c', element: 'Ghost', tier: 'B', abilities: ['Phase Walk', 'Hollow Scream', 'Ghost Strike'], description: 'Spectral being that phases through attacks and strikes from within.', imageKey: 'ghost-hollow-shadow-white-ethereal' },
+  { key: 'mistborn', name: 'Mistborn', power: 68, attack: 78, speed: 75, regen: 68, color: '#64748b', secondColor: '#334155', element: 'Mist', tier: 'B', abilities: ['Mist Shroud', 'Fog Step', 'Vapor Slash'], description: 'Commands thick mists to disorient enemies and launch surprise attacks.', imageKey: 'mist-fog-shadow-fighter-gray' },
+  { key: 'veilborn', name: 'Veilborn', power: 77, attack: 74, speed: 74, regen: 75, color: '#7c3aed', secondColor: '#4c1d95', element: 'Void', tier: 'A', abilities: ['Veil Breach', 'Born Darkness', 'Rift Pulse'], description: 'Born between dimensions, perfectly balanced between worlds.', imageKey: 'dimensional-shadow-balanced-purple' },
+  { key: 'eclipseon', name: 'Eclipseon', power: 92, attack: 88, speed: 65, regen: 55, color: '#1d4ed8', secondColor: '#1e3a8a', element: 'Eclipse', tier: 'S', abilities: ['Solar Eclipse', 'Lunar Crash', 'Celestial Wrath'], description: 'Harnesses the devastating power of solar and lunar eclipses.', imageKey: 'eclipse-celestial-shadow-cosmic' },
+  { key: 'dreadveil', name: 'Dreadveil', power: 80, attack: 83, speed: 62, regen: 65, color: '#991b1b', secondColor: '#450a0a', element: 'Fear', tier: 'A', abilities: ['Dread Aura', 'Fear Veil', 'Terror Strike'], description: 'Projects terrifying dread that weakens enemy resolve before striking.', imageKey: 'dread-fear-shadow-dark-red' },
+  { key: 'phantomis', name: 'Phantomis', power: 73, attack: 77, speed: 85, regen: 63, color: '#e879f9', secondColor: '#701a75', element: 'Phantom', tier: 'A', abilities: ['Phantom Slash', 'Ghost Mirage', 'Spirit Rush'], description: 'Creates phantom copies to confuse and overwhelm opponents.', imageKey: 'phantom-copy-shadow-pink-purple' },
+  { key: 'obscuron', name: 'Obscuron', power: 87, attack: 71, speed: 55, regen: 77, color: '#0f172a', secondColor: '#020617', element: 'Darkness', tier: 'A', abilities: ['Void Darkness', 'Black Hole', 'Obscure Field'], description: 'Master of absolute darkness who blinds enemies and attacks unseen.', imageKey: 'absolute-darkness-shadow-black' },
+  { key: 'noctyra', name: 'Noctyra', power: 74, attack: 79, speed: 82, regen: 67, color: '#0c4a6e', secondColor: '#082f49', element: 'Night', tier: 'B', abilities: ['Night Surge', 'Lunar Boost', 'Star Fall'], description: 'Night-empowered warrior who grows stronger under moonless skies.', imageKey: 'night-sky-shadow-warrior-dark-blue' },
+  { key: 'riftshade', name: 'Riftshade', power: 86, attack: 82, speed: 68, regen: 60, color: '#7e22ce', secondColor: '#3b0764', element: 'Rift', tier: 'S', abilities: ['Rift Tear', 'Dimension Cut', 'Void Rend'], description: 'Tears rifts in space to attack from impossible angles.', imageKey: 'rift-dimension-shadow-warping' },
+  { key: 'netherveil', name: 'Netherveil', power: 83, attack: 76, speed: 58, regen: 80, color: '#4f46e5', secondColor: '#312e81', element: 'Nether', tier: 'A', abilities: ['Nether Drain', 'Hell Veil', 'Abyssal Pull'], description: 'Channels nether energies from the deepest abyss.', imageKey: 'nether-abyss-shadow-deep-purple' },
+  { key: 'shadeflare', name: 'Shadeflare', power: 79, attack: 90, speed: 72, regen: 52, color: '#ea580c', secondColor: '#7c2d12', element: 'Flare', tier: 'A', abilities: ['Shadow Flare', 'Dark Burst', 'Inferno Shade'], description: 'Combines shadow energy with explosive fire for devastating attacks.', imageKey: 'fire-shadow-flare-orange-dark' },
+  { key: 'vantora', name: 'Vantora', power: 84, attack: 85, speed: 65, regen: 66, color: '#0369a1', secondColor: '#0c4a6e', element: 'Storm', tier: 'A', abilities: ['Vanguard Charge', 'Tora Storm', 'Iron Will'], description: 'Relentless vanguard who charges through any defense.', imageKey: 'storm-vanguard-shadow-blue-warrior' },
+  { key: 'hollowfall', name: 'Hollowfall', power: 76, attack: 83, speed: 70, regen: 61, color: '#78716c', secondColor: '#44403c', element: 'Earth', tier: 'B', abilities: ['Hollow Crash', 'Falling Dark', 'Ground Break'], description: 'Crashes down from above with hollow bone-shattering force.', imageKey: 'falling-shadow-earth-impact-warrior' },
+  { key: 'duskrift', name: 'Duskrift', power: 81, attack: 79, speed: 73, regen: 64, color: '#d97706', secondColor: '#92400e', element: 'Dusk', tier: 'A', abilities: ['Dusk Rift', 'Twilight Cut', 'Sunset Divide'], description: 'Opens rifts at dusk, the most dangerous hour for enemies.', imageKey: 'dusk-twilight-shadow-rift-golden' },
+  { key: 'voidscar', name: 'Voidscar', power: 94, attack: 91, speed: 48, regen: 55, color: '#6d28d9', secondColor: '#2e1065', element: 'Void', tier: 'S', abilities: ['Void Scar', 'Reality Tear', 'Null Devastation'], description: 'Leaves permanent void scars on reality with each devastating blow.', imageKey: 'void-scar-reality-destroying-shadow' },
+  { key: 'nightmourne', name: 'Nightmourne', power: 89, attack: 86, speed: 52, regen: 70, color: '#1e1b4b', secondColor: '#0f0c2e', element: 'Night', tier: 'S', abilities: ['Night Mourne', 'Eternal Dark', 'Shadow Requiem'], description: 'Mourns the fallen while bringing eternal night to enemies.', imageKey: 'night-mourne-shadow-mourning-dark' },
+  { key: 'umbrafall', name: 'Umbrafall', power: 82, attack: 84, speed: 60, regen: 68, color: '#334155', secondColor: '#0f172a', element: 'Umbra', tier: 'A', abilities: ['Umbra Crash', 'Shadow Fall', 'Penumbra Strike'], description: 'Falls like a shadow across the battlefield, crushing all below.', imageKey: 'umbra-falling-shadow-dark-blue' },
+  { key: 'darklore', name: 'Darklore', power: 86, attack: 74, speed: 62, regen: 78, color: '#92400e', secondColor: '#451a03', element: 'Ancient', tier: 'A', abilities: ['Ancient Dark', 'Lore Curse', 'Forbidden Seal'], description: 'Wielder of forbidden dark lore from ages past.', imageKey: 'ancient-dark-lore-shadow-mystical' },
+  { key: 'veilstorm', name: 'Veilstorm', power: 80, attack: 88, speed: 78, regen: 58, color: '#0284c7', secondColor: '#075985', element: 'Storm', tier: 'A', abilities: ['Storm Veil', 'Thunder Shade', 'Lightning Shroud'], description: 'Commands lightning-fast storms hidden behind impenetrable veils.', imageKey: 'storm-lightning-veil-shadow-warrior' },
+  { key: 'shadowyn', name: 'Shadowyn', power: 70, attack: 72, speed: 92, regen: 70, color: '#db2777', secondColor: '#831843', element: 'Wind', tier: 'A', abilities: ['Shadow Wind', 'Wyn Rush', 'Tempest Dance'], description: 'Dances through combat with wind-like grace and shadow power.', imageKey: 'graceful-wind-shadow-dancer-pink' },
+  { key: 'cindershade', name: 'Cindershade', power: 77, attack: 86, speed: 66, regen: 57, color: '#c2410c', secondColor: '#7c2d12', element: 'Cinder', tier: 'B', abilities: ['Cinder Blast', 'Ash Veil', 'Ember Storm'], description: 'Born from dying embers, reignites in the heat of battle.', imageKey: 'cinder-ash-shadow-warrior-ember' },
+  { key: 'frostveil', name: 'Frostveil', power: 78, attack: 80, speed: 68, regen: 72, color: '#0891b2', secondColor: '#164e63', element: 'Ice', tier: 'B', abilities: ['Frost Veil', 'Ice Shroud', 'Blizzard Strike'], description: 'Envelops enemies in freezing veils that slow and shatter.', imageKey: 'frost-ice-shadow-warrior-icy-blue' },
+  { key: 'abyssborn', name: 'Abyssborn', power: 96, attack: 82, speed: 44, regen: 66, color: '#020617', secondColor: '#000000', element: 'Abyss', tier: 'S', abilities: ['Abyss Call', 'Deep Consume', 'Infinite Void'], description: 'Born from the deepest abyss where no light has ever reached.', imageKey: 'abyss-deep-dark-shadow-born' },
+  { key: 'grimshadow', name: 'Grimshadow', power: 85, attack: 87, speed: 58, regen: 63, color: '#374151', secondColor: '#111827', element: 'Grim', tier: 'A', abilities: ['Grim Harvest', 'Shadow Reap', 'Dark Verdict'], description: 'Grim reaper-like shadow who harvests the defeated.', imageKey: 'grim-reaper-shadow-dark-scythe' },
+  { key: 'obsidira', name: 'Obsidira', power: 91, attack: 76, speed: 48, regen: 82, color: '#1c1917', secondColor: '#0c0a09', element: 'Stone', tier: 'S', abilities: ['Obsidian Shield', 'Stone Crush', 'Crystal Shatter'], description: 'Forged from volcanic obsidian with near-impenetrable defense.', imageKey: 'obsidian-stone-shadow-crystal-armor' },
+  { key: 'noxveil', name: 'Noxveil', power: 79, attack: 81, speed: 72, regen: 65, color: '#5b21b6', secondColor: '#2e1065', element: 'Nox', tier: 'B', abilities: ['Nox Veil', 'Dark Toxin', 'Nightpoison'], description: 'Cloaks poison attacks in dark veils to prevent evasion.', imageKey: 'dark-toxin-shadow-purple-poison' },
+  { key: 'shadefang', name: 'Shadefang', power: 74, attack: 93, speed: 80, regen: 53, color: '#b91c1c', secondColor: '#7f1d1d', element: 'Beast', tier: 'A', abilities: ['Fang Strike', 'Beast Shade', 'Savage Bite'], description: 'Feral beast-shadow with razor fangs that tear through armor.', imageKey: 'beast-shadow-fang-warrior-red-savage' },
+  { key: 'wraithen', name: 'Wraithen', power: 83, attack: 78, speed: 75, regen: 68, color: '#4b5563', secondColor: '#1f2937', element: 'Wraith', tier: 'A', abilities: ['Wraith Form', 'Haunt Strike', 'Specter Surge'], description: 'Unstoppable wraith who exists between the living and shadow realms.', imageKey: 'wraith-specter-shadow-warrior-ethereal' },
+  { key: 'silentveil', name: 'Silentveil', power: 76, attack: 82, speed: 84, regen: 62, color: '#e2e8f0', secondColor: '#94a3b8', element: 'Silence', tier: 'B', abilities: ['Silent Step', 'Veil Mute', 'Quiet Devastation'], description: 'Moves in absolute silence, making detection impossible.', imageKey: 'silent-white-shadow-invisible-warrior' },
+  { key: 'doomshade', name: 'Doomshade', power: 98, attack: 94, speed: 42, regen: 58, color: '#7f1d1d', secondColor: '#450a0a', element: 'Doom', tier: 'S', abilities: ['Doom Seal', 'Apocalypse Shade', 'Final Darkness'], description: 'The most feared Shadow, whose very presence signals doom.', imageKey: 'doomshade-apocalypse-shadow-ultimate-dark' }
+];
+
+var RANKS = [
+  { key: 'iron', name: 'Iron', color: '#6b7280', minPoints: 0, icon: 'shield' },
+  { key: 'bronze', name: 'Bronze', color: '#b45309', minPoints: 100, icon: 'shield' },
+  { key: 'silver', name: 'Silver', color: '#94a3b8', minPoints: 300, icon: 'military-tech' },
+  { key: 'gold', name: 'Gold', color: '#f59e0b', minPoints: 600, icon: 'military-tech' },
+  { key: 'platinum', name: 'Platinum', color: '#0891b2', minPoints: 1000, icon: 'emoji-events' },
+  { key: 'diamond', name: 'Diamond', color: '#60a5fa', minPoints: 1500, icon: 'diamond' },
+  { key: 'shadow_master', name: 'Shadow Master', color: '#7c3aed', minPoints: 2500, icon: 'auto-awesome' }
+];
+
+var EVENTS_CATALOG = [
+  { key: 'void_tournament', name: 'Void Tournament', description: 'Only Void-element Shadows allowed. Points tripled for void specialists.', modifier: 'Void elements only', reward: '500 Shards', rewardIcon: 'diamond', duration: '2 days left', color: '#7c3aed', isActive: true, imageKey: 'void-tournament-dark-purple-event' },
+  { key: 'speed_blitz', name: 'Speed Blitz', description: 'All Shadows get +30 speed bonus. Fast Shadow meta is dominant.', modifier: 'Speed +30 all', reward: '300 Shards + Title', rewardIcon: 'speed', duration: '5 days left', color: '#0891b2', isActive: true, imageKey: 'speed-blitz-fast-lightning-event' },
+  { key: 'shadow_wars', name: 'Shadow Wars', description: 'Double points event. All Shadow types welcome. Massive ranking shift.', modifier: 'Double season points', reward: '1000 Shards', rewardIcon: 'emoji-events', duration: '1 day left', color: '#dc2626', isActive: true, imageKey: 'shadow-wars-battle-red-event' },
+  { key: 'elemental_clash', name: 'Elemental Clash', description: 'Fire vs Ice vs Storm special brackets. Win your element bracket for bonus.', modifier: 'Element brackets active', reward: '400 Shards + Banner', rewardIcon: 'local-fire-department', duration: '3 days left', color: '#f59e0b', isActive: true, imageKey: 'elemental-clash-fire-ice-storm' },
+  { key: 'nocturnal_rising', name: 'Nocturnal Rising', description: 'Night and Ghost type Shadows get massive power boost. Rare rewards pool.', modifier: 'Night/Ghost +50 power', reward: '600 Shards + Frame', rewardIcon: 'nightlight', duration: '4 days left', color: '#4f46e5', isActive: true, imageKey: 'nocturnal-night-rising-dark-event' },
+  { key: 'chaos_mode', name: 'Chaos Mode', description: 'Random Shadow assignments. Test your skill with unknown compositions.', modifier: 'Random Shadows assigned', reward: '750 Shards', rewardIcon: 'shuffle', duration: '6 hours left', color: '#059669', isActive: false, imageKey: 'chaos-random-shadow-event-green' }
+];
+
+var FAKE_LEADERBOARD = [
+  { rank: 1, name: 'VoidLord_X', points: 4850, wins: 312, shadowKey: 'doomshade' },
+  { rank: 2, name: 'ShadowKing99', points: 4620, wins: 289, shadowKey: 'voidscar' },
+  { rank: 3, name: 'DarkPrince', points: 4490, wins: 275, shadowKey: 'abyssborn' },
+  { rank: 4, name: 'NightBane', points: 4200, wins: 261, shadowKey: 'eclipseon' },
+  { rank: 5, name: 'VeilMaster', points: 3980, wins: 248, shadowKey: 'riftshade' },
+  { rank: 6, name: 'GrimReap3r', points: 3740, wins: 230, shadowKey: 'grimshadow' },
+  { rank: 7, name: 'PhantomX', points: 3510, wins: 215, shadowKey: 'phantomis' },
+  { rank: 8, name: 'ShadeFury', points: 3290, wins: 198, shadowKey: 'duskbane' },
+  { rank: 9, name: 'AbyssWalker', points: 3100, wins: 184, shadowKey: 'netherveil' },
+  { rank: 10, name: 'EclipseGod', points: 2960, wins: 172, shadowKey: 'nightmourne' }
+];
+
+function getShadowByKey(key) {
+  for (var i = 0; i < SHADOW_CATALOG.length; i++) {
+    if (SHADOW_CATALOG[i].key === key) return SHADOW_CATALOG[i];
+  }
+  return SHADOW_CATALOG[0];
+}
+
+function getRankByPoints(points) {
+  var current = RANKS[0];
+  for (var i = 0; i < RANKS.length; i++) {
+    if (points >= RANKS[i].minPoints) current = RANKS[i];
+  }
+  return current;
+}
+
+function getStatBar(value, color) {
+  return React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 } },
+    React.createElement(View, { style: { flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3 } },
+      React.createElement(View, { style: { width: (value + '%'), height: 6, backgroundColor: color, borderRadius: 3 } })
+    ),
+    React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginLeft: 6, width: 26, textAlign: 'right' } }, String(value))
+  );
+}
+// @end:constants-shadows
+
+// @section:ThemeContext @depends:[theme]
+var ThemeContext = React.createContext({
+  theme: { colors: { primary: primaryColor, accent: accentColor, background: backgroundColor, card: cardColor, textPrimary: textPrimary, textSecondary: textSecondary } }
+});
+var ThemeProvider = function(props) {
+  var value = useMemo(function() {
+    return {
+      theme: {
+        colors: {
+          primary: primaryColor,
+          accent: accentColor,
+          background: backgroundColor,
+          card: cardColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          gold: accentGold,
+          crimson: accentCrimson,
+          teal: accentTeal
+        }
+      }
+    };
+  }, []);
+  return React.createElement(ThemeContext.Provider, { value: value }, props.children);
+};
+var useTheme = function() { return useContext(ThemeContext); };
+// @end:ThemeContext
+
+// @section:OnboardingScreen @depends:[ThemeContext,constants-shadows,styles]
+var OnboardingScreen = function(props) {
+  var navigation = props.navigation;
+  var insets = useSafeAreaInsets();
+  var stepState = useState(0);
+  var step = stepState[0];
+  var setStep = stepState[1];
+  var nameState = useState('');
+  var playerName = nameState[0];
+  var setPlayerName = nameState[1];
+  var selectedShadowState = useState(null);
+  var selectedShadow = selectedShadowState[0];
+  var setSelectedShadow = selectedShadowState[1];
+  var loadingState = useState(false);
+  var isLoading = loadingState[0];
+  var setIsLoading = loadingState[1];
+
+  var insertPlayer = useMutation('players', 'insert').mutate;
+  var insertUserShadow = useMutation('user_shadows', 'insert').mutate;
+  var insertTeam = useMutation('user_teams', 'insert').mutate;
+
+  var handleCreateProfile = function() {
+    if (!playerName.trim()) {
+      Platform.OS === 'web' ? window.alert('Enter a name') : Alert.alert('Error', 'Please enter your Shadow name!');
+      return;
+    }
+    if (playerName.trim().length < 2) {
+      Platform.OS === 'web' ? window.alert('Name too short') : Alert.alert('Error', 'Name must be at least 2 characters!');
+      return;
+    }
+    setStep(1);
+  };
+
+  var handleSelectShadow = function(shadow) {
+    setSelectedShadow(shadow);
+  };
+
+  var handleConfirm = function() {
+    if (!selectedShadow) {
+      Platform.OS === 'web' ? window.alert('Select a Shadow') : Alert.alert('Error', 'Please select your first Shadow!');
+      return;
+    }
+    setIsLoading(true);
+    var playerId = 'player-' + Date.now();
+    insertPlayer({ id: playerId, name: playerName.trim(), rank: 'iron', season_points: 0, wins: 0, losses: 0, currency: 500, created_at: new Date().toISOString() })
+      .then(function() {
+        var shadowId = 'ushadow-' + Date.now();
+        return insertUserShadow({ id: shadowId, player_id: playerId, shadow_key: selectedShadow.key, level: 1, extra_power: 0, extra_attack: 0, extra_speed: 0, extra_regen: 0 });
+      })
+      .then(function() {
+        return insertTeam({ id: 'team-' + Date.now(), player_id: playerId, slot1_key: selectedShadow.key, slot2_key: null, slot3_key: null, team_name: 'My Team' });
+      })
+      .then(function() {
+        setIsLoading(false);
+        navigation.replace('MainApp');
+      })
+      .catch(function(err) {
+        setIsLoading(false);
+        Platform.OS === 'web' ? window.alert('Error creating profile') : Alert.alert('Error', 'Failed to create profile. Try again.');
+      });
+  };
+
+  if (step === 0) {
+    return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28, paddingTop: insets.top } },
+      React.createElement(View, { style: { alignItems: 'center', marginBottom: 48 } },
+        React.createElement(View, { style: { width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(124,58,237,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: accentColor, marginBottom: 20 } },
+          React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 44, color: accentColor })
+        ),
+        React.createElement(Text, { style: { color: '#a855f7', fontSize: 13, fontWeight: '700', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8 } }, 'Welcome To'),
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 42, fontWeight: '900', letterSpacing: 2, marginBottom: 8 } }, 'SHADOWFALL'),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 15, textAlign: 'center', lineHeight: 22 } }, 'Enter the arena. Command your Shadows.\nDominate all who stand against you.')
+      ),
+      React.createElement(View, { style: { width: '100%', marginBottom: 24 } },
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 10, letterSpacing: 1 } }, 'YOUR SHADOW NAME'),
+        React.createElement(TextInput, {
+          value: playerName,
+          onChangeText: setPlayerName,
+          placeholder: 'Enter your name...',
+          placeholderTextColor: 'rgba(148,163,184,0.5)',
+          maxLength: 20,
+          autoCapitalize: 'none',
+          autoCorrect: false,
+          style: { backgroundColor: cardColor, color: textPrimary, fontSize: 18, fontWeight: '700', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 16, borderWidth: 1, borderColor: 'rgba(124,58,237,0.4)', letterSpacing: 1 },
+          componentId: 'input-player-name'
+        })
+      ),
+      React.createElement(TouchableOpacity, {
+        onPress: handleCreateProfile,
+        style: { width: '100%', backgroundColor: accentColor, borderRadius: 14, paddingVertical: 18, alignItems: 'center', shadowColor: accentColor, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 8 },
+        componentId: 'btn-enter-shadowfall'
+      },
+        React.createElement(Text, { style: { color: '#ffffff', fontSize: 17, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' } }, 'Enter Shadowfall')
+      )
+    );
+  }
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor, paddingTop: insets.top } },
+    React.createElement(View, { style: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.2)' } },
+      React.createElement(Text, { style: { color: '#a855f7', fontSize: 12, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase' } }, 'Step 2 of 2'),
+      React.createElement(Text, { style: { color: textPrimary, fontSize: 24, fontWeight: '900', marginTop: 4 } }, 'Choose Your First Shadow'),
+      React.createElement(Text, { style: { color: textSecondary, fontSize: 13, marginTop: 4 } }, 'Select the Shadow to begin your journey')
+    ),
+    React.createElement(FlatList, {
+      data: SHADOW_CATALOG,
+      keyExtractor: function(item) { return item.key; },
+      numColumns: 2,
+      contentContainerStyle: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 120 },
+      renderItem: function(info) {
+        var shadow = info.item;
+        var isSelected = selectedShadow && selectedShadow.key === shadow.key;
+        return React.createElement(TouchableOpacity, {
+          onPress: function() { handleSelectShadow(shadow); },
+          style: { flex: 1, margin: 5, borderRadius: 14, backgroundColor: cardColor, borderWidth: isSelected ? 2 : 1, borderColor: isSelected ? shadow.color : 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+          componentId: 'shadow-select-' + shadow.key
+        },
+          React.createElement(View, { style: { height: 100, backgroundColor: shadow.color + '22', justifyContent: 'center', alignItems: 'center' } },
+            React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 40, color: shadow.color })
+          ),
+          React.createElement(View, { style: { padding: 10 } },
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 13, fontWeight: '800' } }, shadow.name),
+            React.createElement(Text, { style: { color: shadow.color, fontSize: 10, fontWeight: '700', marginTop: 2 } }, shadow.element + ' \u2022 ' + shadow.tier + '-Tier'),
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 10 } }, 'PWR ' + shadow.power),
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 10 } }, 'SPD ' + shadow.speed)
+            )
+          ),
+          isSelected ? React.createElement(View, { style: { position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: shadow.color, justifyContent: 'center', alignItems: 'center' } },
+            React.createElement(MaterialIcons, { name: 'check', size: 14, color: '#fff' })
+          ) : null
+        );
+      }
+    }),
+    selectedShadow ? React.createElement(View, { style: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: cardColor, borderTopWidth: 1, borderTopColor: 'rgba(124,58,237,0.3)', padding: 20, paddingBottom: insets.bottom + 20 } },
+      React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 } },
+        React.createElement(View, { style: { width: 44, height: 44, borderRadius: 22, backgroundColor: selectedShadow.color + '33', justifyContent: 'center', alignItems: 'center', marginRight: 12 } },
+          React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 22, color: selectedShadow.color })
+        ),
+        React.createElement(View, { style: { flex: 1 } },
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 16, fontWeight: '800' } }, selectedShadow.name),
+          React.createElement(Text, { style: { color: selectedShadow.color, fontSize: 12 } }, selectedShadow.element + ' \u2022 ' + selectedShadow.tier + '-Tier Shadow')
+        )
+      ),
+      React.createElement(TouchableOpacity, {
+        onPress: handleConfirm,
+        disabled: isLoading,
+        style: { backgroundColor: accentColor, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+        componentId: 'btn-confirm-shadow'
+      },
+        isLoading ? React.createElement(ActivityIndicator, { color: '#fff' }) : React.createElement(Text, { style: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' } }, 'Begin Your Journey')
+      )
+    ) : null
+  );
+};
+// @end:OnboardingScreen
+
+// @section:BattleModal @depends:[constants-shadows,styles]
+var BattleModal = function(props) {
+  var visible = props.visible;
+  var onClose = props.onClose;
+  var playerTeam = props.playerTeam;
+  var onBattleComplete = props.onBattleComplete;
+  var eventKey = props.eventKey;
+  var insets = useSafeAreaInsets();
+
+  var phaseState = useState('queue');
+  var phase = phaseState[0];
+  var setPhase = phaseState[1];
+  var timerState = useState(3);
+  var timer = timerState[0];
+  var setTimer = timerState[1];
+  var playerHpState = useState([100, 100, 100]);
+  var playerHp = playerHpState[0];
+  var setPlayerHp = playerHpState[1];
+  var enemyHpState = useState([100, 100, 100]);
+  var enemyHp = enemyHpState[0];
+  var setEnemyHp = enemyHpState[1];
+  var logState = useState([]);
+  var battleLog = logState[0];
+  var setBattleLog = logState[1];
+  var resultState = useState(null);
+  var result = resultState[0];
+  var setResult = resultState[1];
+  var roundState = useState(1);
+  var round = roundState[0];
+  var setRound = roundState[1];
+
+  var enemyNames = ['VoidLord_X', 'ShadowKing99', 'DarkPrince', 'NightBane', 'VeilMaster', 'GrimReap3r'];
+  var enemyNameState = useState(enemyNames[Math.floor(Math.random() * enemyNames.length)]);
+  var enemyName = enemyNameState[0];
+
+  var randomEnemyShadows = useMemo(function() {
+    var shuffled = SHADOW_CATALOG.slice().sort(function() { return Math.random() - 0.5; });
+    return shuffled.slice(0, 3);
+  }, [visible]);
+
+  useEffect(function() {
+    if (!visible) {
+      setPhase('queue');
+      setTimer(3);
+      setPlayerHp([100, 100, 100]);
+      setEnemyHp([100, 100, 100]);
+      setBattleLog([]);
+      setResult(null);
+      setRound(1);
+      return;
+    }
+    var t = setTimeout(function() { setPhase('matchmaking'); }, 500);
+    return function() { clearTimeout(t); };
+  }, [visible]);
+
+  useEffect(function() {
+    if (phase === 'matchmaking') {
+      var t = setTimeout(function() { setPhase('found'); }, 2500);
+      return function() { clearTimeout(t); };
+    }
+    if (phase === 'found') {
+      var t2 = setTimeout(function() { setPhase('countdown'); setTimer(3); }, 1500);
+      return function() { clearTimeout(t2); };
+    }
+    if (phase === 'countdown') {
+      if (timer > 0) {
+        var t3 = setTimeout(function() { setTimer(function(prev) { return prev - 1; }); }, 1000);
+        return function() { clearTimeout(t3); };
+      } else {
+        setPhase('battle');
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [phase, timer]);
+
+  useEffect(function() {
+    if (phase !== 'battle') return;
+    var battleInterval = setInterval(function() {
+      setPlayerHp(function(prev) {
+        var next = prev.slice();
+        var teamShadows = playerTeam ? playerTeam.filter(function(k) { return !!k; }) : [];
+        var avgSpeed = 50;
+        if (teamShadows.length > 0) {
+          var total = 0;
+          for (var i = 0; i < teamShadows.length; i++) {
+            total += getShadowByKey(teamShadows[i]).speed;
+          }
+          avgSpeed = total / teamShadows.length;
+        }
+        var dmgTake = Math.floor(Math.random() * 15 + 5) - Math.floor(avgSpeed / 20);
+        dmgTake = Math.max(2, dmgTake);
+        var idx = 0;
+        for (var i2 = 0; i2 < next.length; i2++) { if (next[i2] > 0) { idx = i2; break; } }
+        if (next[idx] > 0) next[idx] = Math.max(0, next[idx] - dmgTake);
+        return next;
+      });
+      setEnemyHp(function(prev) {
+        var next = prev.slice();
+        var teamShadows = playerTeam ? playerTeam.filter(function(k) { return !!k; }) : [];
+        var avgAtk = 70;
+        if (teamShadows.length > 0) {
+          var total = 0;
+          for (var i = 0; i < teamShadows.length; i++) {
+            total += getShadowByKey(teamShadows[i]).attack;
+          }
+          avgAtk = total / teamShadows.length;
+        }
+        var dmgDeal = Math.floor(Math.random() * 20 + 8) + Math.floor(avgAtk / 15);
+        var idx = 0;
+        for (var i2 = 0; i2 < next.length; i2++) { if (next[i2] > 0) { idx = i2; break; } }
+        if (next[idx] > 0) next[idx] = Math.max(0, next[idx] - dmgDeal);
+        return next;
+      });
+      setRound(function(prev) { return prev + 1; });
+      setBattleLog(function(prev) {
+        var moves = ['strikes hard', 'unleashes a shadow burst', 'activates ability', 'attacks with fury', 'lands a critical hit'];
+        var mv = moves[Math.floor(Math.random() * moves.length)];
+        var newEntry = 'Round ' + (round + 1) + ': Your shadow ' + mv + '!';
+        return [newEntry].concat(prev.slice(0, 3));
+      });
+    }, 800);
+
+    return function() { clearInterval(battleInterval); };
+  }, [phase]);
+
+  useEffect(function() {
+    if (phase !== 'battle') return;
+    var playerDead = playerHp.every(function(h) { return h <= 0; });
+    var enemyDead = enemyHp.every(function(h) { return h <= 0; });
+    if (playerDead || enemyDead) {
+      setPhase('result');
+      var won = enemyDead;
+      var pts = won ? (eventKey ? 60 : 30) : -10;
+      setResult({ won: won, points: pts });
+      if (onBattleComplete) onBattleComplete({ won: won, points: pts });
+    }
+  }, [playerHp, enemyHp, phase]);
+
+  var renderPhase = function() {
+    if (phase === 'queue' || phase === 'matchmaking') {
+      return React.createElement(View, { style: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 } },
+        React.createElement(ActivityIndicator, { size: 'large', color: accentColor, style: { marginBottom: 20 } }),
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' } }, 'Finding Opponent...'),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 14, textAlign: 'center' } }, 'Searching global ranked queue')
+      );
+    }
+    if (phase === 'found') {
+      return React.createElement(View, { style: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 } },
+        React.createElement(View, { style: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(220,38,38,0.15)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: accentCrimson } },
+          React.createElement(MaterialIcons, { name: 'person', size: 40, color: accentCrimson })
+        ),
+        React.createElement(Text, { style: { color: accentCrimson, fontSize: 13, fontWeight: '700', letterSpacing: 2, marginBottom: 6 } }, 'OPPONENT FOUND'),
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900' } }, enemyName),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 14, marginTop: 8 } }, 'Preparing battle arena...')
+      );
+    }
+    if (phase === 'countdown') {
+      return React.createElement(View, { style: { flex: 1, justifyContent: 'center', alignItems: 'center' } },
+        React.createElement(View, { style: { width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(124,58,237,0.2)', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: accentColor } },
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 64, fontWeight: '900' } }, timer > 0 ? String(timer) : 'GO!')
+        ),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 16, marginTop: 20 } }, 'Battle begins in...')
+      );
+    }
+    if (phase === 'battle') {
+      var validTeam = playerTeam ? playerTeam.filter(function(k) { return !!k; }) : [];
+      return React.createElement(View, { style: { flex: 1 } },
+        React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' } },
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 12, fontWeight: '700' } }, 'YOUR TEAM'),
+          React.createElement(View, { style: { paddingHorizontal: 12, paddingVertical: 4, backgroundColor: 'rgba(124,58,237,0.2)', borderRadius: 20, borderWidth: 1, borderColor: accentColor } },
+            React.createElement(Text, { style: { color: accentColor, fontSize: 12, fontWeight: '700' } }, 'Round ' + round)
+          ),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 12, fontWeight: '700' } }, 'ENEMY')
+        ),
+        React.createElement(View, { style: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12 } },
+          React.createElement(View, { style: { flex: 1 } },
+            playerHp.map(function(hp, idx) {
+              var shadowKey = validTeam[idx] || SHADOW_CATALOG[idx % SHADOW_CATALOG.length].key;
+              var shadow = getShadowByKey(shadowKey);
+              return React.createElement(View, { key: String(idx), style: { marginBottom: 10 } },
+                React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 } },
+                  React.createElement(View, { style: { width: 28, height: 28, borderRadius: 14, backgroundColor: shadow.color + '33', justifyContent: 'center', alignItems: 'center', marginRight: 6 } },
+                    React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 14, color: shadow.color })
+                  ),
+                  React.createElement(Text, { style: { color: hp > 0 ? textPrimary : textSecondary, fontSize: 11, fontWeight: '700', opacity: hp > 0 ? 1 : 0.4 } }, shadow.name)
+                ),
+                React.createElement(View, { style: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4 } },
+                  React.createElement(View, { style: { width: hp + '%', height: 8, backgroundColor: hp > 50 ? '#10b981' : hp > 20 ? accentGold : accentCrimson, borderRadius: 4 } })
+                ),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 10, marginTop: 2 } }, String(hp) + ' HP')
+              );
+            })
+          ),
+          React.createElement(View, { style: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 12 } }),
+          React.createElement(View, { style: { flex: 1 } },
+            enemyHp.map(function(hp, idx) {
+              var shadow = randomEnemyShadows[idx] || SHADOW_CATALOG[idx];
+              return React.createElement(View, { key: String(idx), style: { marginBottom: 10 } },
+                React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexDirection: 'row-reverse' } },
+                  React.createElement(View, { style: { width: 28, height: 28, borderRadius: 14, backgroundColor: shadow.color + '33', justifyContent: 'center', alignItems: 'center', marginLeft: 6 } },
+                    React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 14, color: shadow.color })
+                  ),
+                  React.createElement(Text, { style: { color: hp > 0 ? textPrimary : textSecondary, fontSize: 11, fontWeight: '700', opacity: hp > 0 ? 1 : 0.4, textAlign: 'right' } }, shadow.name)
+                ),
+                React.createElement(View, { style: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4 } },
+                  React.createElement(View, { style: { width: hp + '%', height: 8, backgroundColor: hp > 50 ? accentCrimson : hp > 20 ? accentGold : '#10b981', borderRadius: 4 } })
+                ),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 10, marginTop: 2, textAlign: 'right' } }, String(hp) + ' HP')
+              );
+            })
+          )
+        ),
+        React.createElement(View, { style: { marginHorizontal: 16, padding: 12, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 10, flex: 1 } },
+          React.createElement(Text, { style: { color: '#a855f7', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 8 } }, 'BATTLE LOG'),
+          battleLog.map(function(entry, idx) {
+            return React.createElement(Text, { key: String(idx), style: { color: textSecondary, fontSize: 12, marginBottom: 4, opacity: idx === 0 ? 1 : 0.5 } }, '\u25b6 ' + entry);
+          })
+        )
+      );
+    }
+    if (phase === 'result') {
+      var won = result && result.won;
+      return React.createElement(View, { style: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 } },
+        React.createElement(View, { style: { width: 100, height: 100, borderRadius: 50, backgroundColor: won ? 'rgba(16,185,129,0.15)' : 'rgba(220,38,38,0.15)', justifyContent: 'center', alignItems: 'center', marginBottom: 24, borderWidth: 2, borderColor: won ? '#10b981' : accentCrimson } },
+          React.createElement(MaterialIcons, { name: won ? 'emoji-events' : 'close', size: 50, color: won ? '#10b981' : accentCrimson })
+        ),
+        React.createElement(Text, { style: { color: won ? '#10b981' : accentCrimson, fontSize: 34, fontWeight: '900', letterSpacing: 2, marginBottom: 8 } }, won ? 'VICTORY' : 'DEFEAT'),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 16, marginBottom: 20, textAlign: 'center' } }, won ? 'You crushed the opposition!' : 'Your Shadows fought valiantly.'),
+        React.createElement(View, { style: { backgroundColor: cardColor2, borderRadius: 14, padding: 16, width: '100%', marginBottom: 28, borderWidth: 1, borderColor: won ? 'rgba(16,185,129,0.3)' : 'rgba(220,38,38,0.3)' } },
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 12, textAlign: 'center', marginBottom: 4 } }, 'SEASON POINTS'),
+          React.createElement(Text, { style: { color: won ? '#10b981' : accentCrimson, fontSize: 32, fontWeight: '900', textAlign: 'center' } }, (won ? '+' : '') + String(result ? result.points : 0))
+        ),
+        React.createElement(TouchableOpacity, {
+          onPress: onClose,
+          style: { backgroundColor: accentColor, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 40, alignItems: 'center' },
+          componentId: 'btn-battle-continue'
+        },
+          React.createElement(Text, { style: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1 } }, 'CONTINUE')
+        )
+      );
+    }
+    return null;
+  };
+
+  return React.createElement(Modal, { visible: visible, animationType: 'slide', transparent: true, onRequestClose: onClose },
+    React.createElement(View, { style: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', marginTop: insets.top } },
+      React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+        phase !== 'result' && phase !== 'queue' && phase !== 'matchmaking' ? React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 } },
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 18, fontWeight: '900' } }, 'SHADOWFALL ARENA'),
+          phase === 'battle' ? React.createElement(TouchableOpacity, { onPress: onClose }, React.createElement(MaterialIcons, { name: 'close', size: 22, color: textSecondary })) : null
+        ) : null,
+        renderPhase()
+      )
+    )
+  );
+};
+// @end:BattleModal
+
+// @section:BattleScreen @depends:[ThemeContext,constants-shadows,BattleModal,styles]
+var BattleScreen = function(props) {
+  var navigation = props.navigation;
+  var insets = useSafeAreaInsets();
+  var battleModalState = useState(false);
+  var showBattleModal = battleModalState[0];
+  var setShowBattleModal = battleModalState[1];
+  var eventModeState = useState(null);
+  var eventMode = eventModeState[0];
+  var setEventMode = eventModeState[1];
+
+  var playersQuery = useQuery('players');
+  var players = playersQuery.data;
+  var teamsQuery = useQuery('user_teams');
+  var teams = teamsQuery.data;
+  var insertMatch = useMutation('match_records', 'insert').mutate;
+  var updatePlayer = useMutation('players', 'update').mutate;
+
+  var player = players && players.length > 0 ? players[0] : null;
+  var team = teams && teams.length > 0 ? teams[0] : null;
+  var playerTeamSlots = team ? [team.slot1_key, team.slot2_key, team.slot3_key].filter(function(k) { return !!k; }) : [];
+  var rank = player ? getRankByPoints(player.season_points || 0) : RANKS[0];
+
+  var handleBattleComplete = function(battleResult) {
+    if (!player) return;
+    var newPoints = Math.max(0, (player.season_points || 0) + battleResult.points);
+    var newWins = battleResult.won ? (player.wins || 0) + 1 : (player.wins || 0);
+    var newLosses = !battleResult.won ? (player.losses || 0) + 1 : (player.losses || 0);
+    var currency = battleResult.won ? (player.currency || 0) + 100 : (player.currency || 0) + 20;
+    insertMatch({ id: 'match-' + Date.now(), player_id: player.id, result: battleResult.won ? 'win' : 'loss', points: battleResult.points, event_key: eventMode || null, shadow_keys_used: JSON.stringify(playerTeamSlots), created_at: new Date().toISOString() });
+    updatePlayer({ id: player.id, data: { season_points: newPoints, wins: newWins, losses: newLosses, currency: currency } })
+      .then(function() { playersQuery.refetch(); });
+  };
+
+  var handleStartBattle = function(evtKey) {
+    setEventMode(evtKey || null);
+    setShowBattleModal(true);
+  };
+
+  var scrollBottomPadding = Platform.OS === 'web' ? WEB_TAB_MENU_PADDING : (TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING);
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+    React.createElement(View, { style: { paddingTop: insets.top, backgroundColor: primaryColor, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.3)' } },
+      React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 } },
+        React.createElement(View, null,
+          React.createElement(Text, { style: { color: '#a855f7', fontSize: 11, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase' } }, 'Battle Arena'),
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900', letterSpacing: 1 } }, 'SHADOWFALL')
+        ),
+        player ? React.createElement(View, { style: { alignItems: 'flex-end' } },
+          React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', backgroundColor: rank.color + '22', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: rank.color + '66' } },
+            React.createElement(MaterialIcons, { name: rank.icon, size: 14, color: rank.color }),
+            React.createElement(Text, { style: { color: rank.color, fontSize: 12, fontWeight: '800', marginLeft: 4 } }, rank.name)
+          ),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginTop: 3 } }, String(player.season_points || 0) + ' pts')
+        ) : null
+      )
+    ),
+    React.createElement(ScrollView, { style: { flex: 1 }, contentContainerStyle: { paddingTop: 20, paddingBottom: scrollBottomPadding } },
+      React.createElement(View, { style: { marginHorizontal: 16, borderRadius: 20, overflow: 'hidden', marginBottom: 20 } },
+        React.createElement(View, { style: { backgroundColor: 'rgba(124,58,237,0.15)', borderWidth: 1, borderColor: 'rgba(124,58,237,0.4)', borderRadius: 20, padding: 20 } },
+          React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } },
+            React.createElement(View, null,
+              React.createElement(Text, { style: { color: '#a855f7', fontSize: 11, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 } }, 'Ranked Season'),
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 22, fontWeight: '900' } }, 'Ranked Match')
+            ),
+            React.createElement(View, { style: { alignItems: 'center' } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginBottom: 4 } }, 'Win Reward'),
+              React.createElement(Text, { style: { color: '#10b981', fontSize: 18, fontWeight: '900' } }, '+30 pts')
+            )
+          ),
+          playerTeamSlots.length === 0 ? React.createElement(View, { style: { backgroundColor: 'rgba(245,158,11,0.1)', borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' } },
+            React.createElement(Text, { style: { color: accentGold, fontSize: 13, textAlign: 'center' } }, '\u26a0\ufe0f Build your team first in the Team tab!')
+          ) : React.createElement(View, { style: { flexDirection: 'row', marginBottom: 14 } },
+            playerTeamSlots.map(function(key, idx) {
+              var shadow = getShadowByKey(key);
+              return React.createElement(View, { key: String(idx), style: { flex: 1, alignItems: 'center', backgroundColor: shadow.color + '15', borderRadius: 10, marginRight: idx < 2 ? 6 : 0, paddingVertical: 8 } },
+                React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 22, color: shadow.color }),
+                React.createElement(Text, { style: { color: textPrimary, fontSize: 10, fontWeight: '700', marginTop: 4 } }, shadow.name)
+              );
+            })
+          ),
+          React.createElement(TouchableOpacity, {
+            onPress: function() { handleStartBattle(null); },
+            style: { backgroundColor: accentColor, borderRadius: 14, paddingVertical: 16, alignItems: 'center', shadowColor: accentColor, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6 },
+            componentId: 'btn-ranked-battle'
+          },
+            React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+              React.createElement(MaterialIcons, { name: 'sports-mma', size: 20, color: '#fff', style: { marginRight: 8 } }),
+              React.createElement(Text, { style: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' } }, 'Find Ranked Match')
+            )
+          )
+        )
+      ),
+      React.createElement(View, { style: { paddingHorizontal: 16, marginBottom: 14 } },
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 18, fontWeight: '900', marginBottom: 4 } }, 'Active Events'),
+        React.createElement(Text, { style: { color: textSecondary, fontSize: 13 } }, 'Limited-time battles with unique rules')
+      ),
+      EVENTS_CATALOG.filter(function(e) { return e.isActive; }).map(function(evt, idx) {
+        return React.createElement(TouchableOpacity, {
+          key: evt.key,
+          onPress: function() { handleStartBattle(evt.key); },
+          style: { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, backgroundColor: cardColor, borderWidth: 1, borderColor: evt.color + '44', overflow: 'hidden' },
+          componentId: 'event-battle-' + evt.key
+        },
+          React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', padding: 16 } },
+            React.createElement(View, { style: { width: 52, height: 52, borderRadius: 26, backgroundColor: evt.color + '22', justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 1, borderColor: evt.color + '44' } },
+              React.createElement(MaterialIcons, { name: evt.rewardIcon, size: 26, color: evt.color })
+            ),
+            React.createElement(View, { style: { flex: 1 } },
+              React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } },
+                React.createElement(Text, { style: { color: textPrimary, fontSize: 15, fontWeight: '800' } }, evt.name),
+                React.createElement(Text, { style: { color: evt.color, fontSize: 11, fontWeight: '700' } }, evt.duration)
+              ),
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, marginTop: 3 } }, evt.modifier),
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginTop: 5 } },
+                React.createElement(MaterialIcons, { name: 'card-giftcard', size: 12, color: accentGold }),
+                React.createElement(Text, { style: { color: accentGold, fontSize: 11, marginLeft: 4, fontWeight: '700' } }, evt.reward)
+              )
+            ),
+            React.createElement(MaterialIcons, { name: 'chevron-right', size: 20, color: textSecondary })
+          )
+        );
+      }),
+      player ? React.createElement(View, { style: { marginHorizontal: 16, marginTop: 10, flexDirection: 'row', borderRadius: 14, overflow: 'hidden' } },
+        React.createElement(View, { style: { flex: 1, backgroundColor: cardColor2, padding: 16, marginRight: 6, borderRadius: 14, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' } },
+          React.createElement(MaterialIcons, { name: 'emoji-events', size: 24, color: '#10b981' }),
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 20, fontWeight: '900', marginTop: 4 } }, String(player.wins || 0)),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Wins')
+        ),
+        React.createElement(View, { style: { flex: 1, backgroundColor: cardColor2, padding: 16, marginLeft: 6, borderRadius: 14, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' } },
+          React.createElement(MaterialIcons, { name: 'close', size: 24, color: accentCrimson }),
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 20, fontWeight: '900', marginTop: 4 } }, String(player.losses || 0)),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Losses')
+        )
+      ) : null
+    ),
+    React.createElement(BattleModal, {
+      visible: showBattleModal,
+      onClose: function() { setShowBattleModal(false); },
+      playerTeam: playerTeamSlots,
+      onBattleComplete: handleBattleComplete,
+      eventKey: eventMode
+    })
+  );
+};
+// @end:BattleScreen
+
+// @section:ShadowDetailModal @depends:[constants-shadows,styles]
+var ShadowDetailModal = function(props) {
+  var visible = props.visible;
+  var shadow = props.shadow;
+  var onClose = props.onClose;
+  var ownedLevel = props.ownedLevel;
+  var onUpgrade = props.onUpgrade;
+  var playerCurrency = props.playerCurrency;
+  var insets = useSafeAreaInsets();
+
+  if (!shadow) return null;
+  var upgradeCost = ownedLevel ? (ownedLevel * 150) : 0;
+  var canAfford = playerCurrency >= upgradeCost;
+
+  return React.createElement(Modal, { visible: visible, animationType: 'slide', transparent: true, onRequestClose: onClose },
+    React.createElement(View, { style: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.75)', marginTop: insets.top } },
+      React.createElement(View, { style: { backgroundColor: primaryColor, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: shadow.color + '44', paddingBottom: insets.bottom + 20 } },
+        React.createElement(View, { style: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 } },
+          React.createElement(View, { style: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)' } })
+        ),
+        React.createElement(View, { style: { height: 160, backgroundColor: shadow.color + '18', justifyContent: 'center', alignItems: 'center', marginHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: shadow.color + '33', marginBottom: 16 } },
+          React.createElement(View, { style: { width: 80, height: 80, borderRadius: 40, backgroundColor: shadow.color + '33', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: shadow.color } },
+            React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 40, color: shadow.color })
+          ),
+          React.createElement(View, { style: { position: 'absolute', top: 12, right: 12, backgroundColor: shadow.color + '33', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: shadow.color } },
+            React.createElement(Text, { style: { color: shadow.color, fontSize: 11, fontWeight: '900' } }, shadow.tier + '-Tier')
+          ),
+          ownedLevel ? React.createElement(View, { style: { position: 'absolute', bottom: 12, left: 12, backgroundColor: 'rgba(16,185,129,0.2)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 } },
+            React.createElement(Text, { style: { color: '#10b981', fontSize: 11, fontWeight: '700' } }, 'Lvl ' + ownedLevel + ' \u2713 Owned')
+          ) : null
+        ),
+        React.createElement(ScrollView, { style: { maxHeight: 380 }, contentContainerStyle: { paddingHorizontal: 20 } },
+          React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 } },
+            React.createElement(View, null,
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900' } }, shadow.name),
+              React.createElement(Text, { style: { color: shadow.color, fontSize: 13, fontWeight: '700' } }, shadow.element + ' Element')
+            )
+          ),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 13, lineHeight: 20, marginBottom: 16 } }, shadow.description),
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '800', marginBottom: 10 } }, 'COMBAT STATS'),
+          React.createElement(View, { style: { backgroundColor: cardColor, borderRadius: 12, padding: 14, marginBottom: 14 } },
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, width: 60 } }, 'POWER'),
+              getStatBar(shadow.power, '#7c3aed')
+            ),
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, width: 60 } }, 'ATTACK'),
+              getStatBar(shadow.attack, '#dc2626')
+            ),
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, width: 60 } }, 'SPEED'),
+              getStatBar(shadow.speed, '#0891b2')
+            ),
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between' } },
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, width: 60 } }, 'REGEN'),
+              getStatBar(shadow.regen, '#10b981')
+            )
+          ),
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '800', marginBottom: 10 } }, 'ABILITIES'),
+          React.createElement(View, { style: { marginBottom: 16 } },
+            shadow.abilities.map(function(ab, idx) {
+              return React.createElement(View, { key: String(idx), style: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 } },
+                React.createElement(View, { style: { width: 28, height: 28, borderRadius: 14, backgroundColor: shadow.color + '22', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: shadow.color + '44' } },
+                  React.createElement(Text, { style: { color: shadow.color, fontSize: 12, fontWeight: '900' } }, String(idx + 1))
+                ),
+                React.createElement(Text, { style: { color: textPrimary, fontSize: 13, fontWeight: '700' } }, ab)
+              );
+            })
+          ),
+          ownedLevel ? React.createElement(View, null,
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: cardColor2, borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' } },
+              React.createElement(View, null,
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 12 } }, 'Upgrade to Level ' + (ownedLevel + 1)),
+                React.createElement(Text, { style: { color: accentGold, fontSize: 18, fontWeight: '900', marginTop: 2 } }, upgradeCost + ' Shards')
+              ),
+              React.createElement(View, { style: { alignItems: 'flex-end' } },
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Your Shards'),
+                React.createElement(Text, { style: { color: playerCurrency >= upgradeCost ? '#10b981' : accentCrimson, fontSize: 16, fontWeight: '900' } }, String(playerCurrency))
+              )
+            ),
+            React.createElement(TouchableOpacity, {
+              onPress: canAfford ? onUpgrade : null,
+              style: { backgroundColor: canAfford ? accentGold : 'rgba(245,158,11,0.3)', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 },
+              componentId: 'btn-upgrade-shadow'
+            },
+              React.createElement(Text, { style: { color: canAfford ? '#000' : textSecondary, fontSize: 15, fontWeight: '900' } }, canAfford ? 'Upgrade Shadow' : 'Not Enough Shards')
+            )
+          ) : null
+        ),
+        React.createElement(TouchableOpacity, { onPress: onClose, style: { marginHorizontal: 20, marginTop: 10, paddingVertical: 14, alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }, componentId: 'btn-close-shadow-detail' },
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 15 } }, 'Close')
+        )
+      )
+    )
+  );
+};
+// @end:ShadowDetailModal
+
+// @section:ShadowsScreen @depends:[ThemeContext,constants-shadows,ShadowDetailModal,styles]
+var ShadowsScreen = function(props) {
+  var insets = useSafeAreaInsets();
+  var selectedShadowState = useState(null);
+  var selectedShadow = selectedShadowState[0];
+  var setSelectedShadow = selectedShadowState[1];
+  var showDetailState = useState(false);
+  var showDetail = showDetailState[0];
+  var setShowDetail = showDetailState[1];
+  var filterState = useState('All');
+  var filterElement = filterState[0];
+  var setFilterElement = filterState[1];
+  var searchState = useState('');
+  var searchText = searchState[0];
+  var setSearchText = searchState[1];
+
+  var playersQuery = useQuery('players');
+  var userShadowsQuery = useQuery('user_shadows');
+  var players = playersQuery.data;
+  var userShadows = userShadowsQuery.data;
+
+  var player = players && players.length > 0 ? players[0] : null;
+  var updatePlayer = useMutation('players', 'update').mutate;
+  var updateShadow = useMutation('user_shadows', 'update').mutate;
+
+  var ownedMap = useMemo(function() {
+    var map = {};
+    if (userShadows) {
+      for (var i = 0; i < userShadows.length; i++) {
+        map[userShadows[i].shadow_key] = userShadows[i];
+      }
+    }
+    return map;
+  }, [userShadows]);
+
+  var elements = useMemo(function() {
+    var set = ['All'];
+    SHADOW_CATALOG.forEach(function(s) {
+      if (set.indexOf(s.element) === -1) set.push(s.element);
+    });
+    return set;
+  }, []);
+
+  var filteredShadows = useMemo(function() {
+    return SHADOW_CATALOG.filter(function(s) {
+      var matchEl = filterElement === 'All' || s.element === filterElement;
+      var matchSearch = !searchText || s.name.toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
+      return matchEl && matchSearch;
+    });
+  }, [filterElement, searchText]);
+
+  var handleOpenDetail = function(shadow) {
+    setSelectedShadow(shadow);
+    setShowDetail(true);
+  };
+
+  var handleUpgrade = function() {
+    if (!player || !selectedShadow) return;
+    var owned = ownedMap[selectedShadow.key];
+    if (!owned) return;
+    var cost = owned.level * 150;
+    if ((player.currency || 0) < cost) return;
+    updatePlayer({ id: player.id, data: { currency: (player.currency || 0) - cost } })
+      .then(function() {
+        return updateShadow({ id: owned.id, data: { level: owned.level + 1 } });
+      })
+      .then(function() {
+        playersQuery.refetch();
+        userShadowsQuery.refetch();
+        Platform.OS === 'web' ? window.alert(selectedShadow.name + ' upgraded to Lvl ' + (owned.level + 1) + '!') : Alert.alert('Upgraded!', selectedShadow.name + ' upgraded to Lvl ' + (owned.level + 1) + '!');
+      });
+  };
+
+  var scrollBottomPadding = Platform.OS === 'web' ? WEB_TAB_MENU_PADDING : (TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING);
+  var tierColors = { 'S': '#f59e0b', 'A': '#7c3aed', 'B': '#0891b2' };
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+    React.createElement(View, { style: { paddingTop: insets.top, backgroundColor: primaryColor, paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.3)' } },
+      React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 12 } },
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900' } }, 'Shadow Roster'),
+        player ? React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' } },
+          React.createElement(MaterialIcons, { name: 'diamond', size: 14, color: accentGold }),
+          React.createElement(Text, { style: { color: accentGold, fontSize: 13, fontWeight: '800', marginLeft: 4 } }, String(player.currency || 0) + ' Shards')
+        ) : null
+      ),
+      React.createElement(TextInput, {
+        value: searchText,
+        onChangeText: setSearchText,
+        placeholder: 'Search Shadows...',
+        placeholderTextColor: 'rgba(148,163,184,0.5)',
+        autoCapitalize: 'none',
+        autoCorrect: false,
+        style: { backgroundColor: cardColor2, color: textPrimary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+        componentId: 'input-shadow-search'
+      }),
+      React.createElement(ScrollView, { horizontal: true, showsHorizontalScrollIndicator: false, style: { flexGrow: 'initial' } },
+        elements.slice(0, 12).map(function(el) {
+          var isActive = filterElement === el;
+          return React.createElement(TouchableOpacity, {
+            key: el,
+            onPress: function() { setFilterElement(el); },
+            style: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: isActive ? accentColor : 'rgba(255,255,255,0.06)', marginRight: 8, borderWidth: 1, borderColor: isActive ? accentColor : 'rgba(255,255,255,0.08)' },
+            componentId: 'filter-' + el
+          },
+            React.createElement(Text, { style: { color: isActive ? '#fff' : textSecondary, fontSize: 12, fontWeight: '700' } }, el)
+          );
+        })
+      )
+    ),
+    React.createElement(FlatList, {
+      data: filteredShadows,
+      keyExtractor: function(item) { return item.key; },
+      numColumns: 2,
+      contentContainerStyle: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: scrollBottomPadding },
+      renderItem: function(info) {
+        var shadow = info.item;
+        var owned = ownedMap[shadow.key];
+        return React.createElement(TouchableOpacity, {
+          onPress: function() { handleOpenDetail(shadow); },
+          style: { flex: 1, margin: 5, borderRadius: 16, backgroundColor: cardColor, borderWidth: 1, borderColor: owned ? shadow.color + '55' : 'rgba(255,255,255,0.06)', overflow: 'hidden' },
+          componentId: 'shadow-card-' + shadow.key
+        },
+          React.createElement(View, { style: { height: 90, backgroundColor: shadow.color + '15', justifyContent: 'center', alignItems: 'center', position: 'relative' } },
+            React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 42, color: shadow.color }),
+            React.createElement(View, { style: { position: 'absolute', top: 8, left: 8, backgroundColor: (tierColors[shadow.tier] || accentColor) + '33', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: (tierColors[shadow.tier] || accentColor) + '66' } },
+              React.createElement(Text, { style: { color: tierColors[shadow.tier] || accentColor, fontSize: 10, fontWeight: '900' } }, shadow.tier)
+            ),
+            owned ? React.createElement(View, { style: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(16,185,129,0.2)', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 } },
+              React.createElement(Text, { style: { color: '#10b981', fontSize: 9, fontWeight: '900' } }, 'LVL ' + owned.level)
+            ) : null
+          ),
+          React.createElement(View, { style: { padding: 10 } },
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 12, fontWeight: '900', marginBottom: 2 } }, shadow.name),
+            React.createElement(Text, { style: { color: shadow.color, fontSize: 10, fontWeight: '700', marginBottom: 6 } }, shadow.element),
+            React.createElement(View, { style: { gap: 3 } },
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 9, width: 28 } }, 'PWR'),
+                React.createElement(View, { style: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2 } },
+                  React.createElement(View, { style: { width: shadow.power + '%', height: 4, backgroundColor: '#7c3aed', borderRadius: 2 } })
+                )
+              ),
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 9, width: 28 } }, 'ATK'),
+                React.createElement(View, { style: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2 } },
+                  React.createElement(View, { style: { width: shadow.attack + '%', height: 4, backgroundColor: accentCrimson, borderRadius: 2 } })
+                )
+              ),
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 9, width: 28 } }, 'SPD'),
+                React.createElement(View, { style: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2 } },
+                  React.createElement(View, { style: { width: shadow.speed + '%', height: 4, backgroundColor: accentTeal, borderRadius: 2 } })
+                )
+              )
+            )
+          )
+        );
+      }
+    }),
+    React.createElement(ShadowDetailModal, {
+      visible: showDetail,
+      shadow: selectedShadow,
+      onClose: function() { setShowDetail(false); },
+      ownedLevel: selectedShadow && ownedMap[selectedShadow.key] ? ownedMap[selectedShadow.key].level : null,
+      onUpgrade: handleUpgrade,
+      playerCurrency: player ? (player.currency || 0) : 0
+    })
+  );
+};
+// @end:ShadowsScreen
+
+// @section:TeamScreen @depends:[ThemeContext,constants-shadows,styles]
+var TeamScreen = function(props) {
+  var insets = useSafeAreaInsets();
+  var activeSlotState = useState(null);
+  var activeSlot = activeSlotState[0];
+  var setActiveSlot = activeSlotState[1];
+  var showPickerState = useState(false);
+  var showPicker = showPickerState[0];
+  var setShowPicker = showPickerState[1];
+
+  var teamsQuery = useQuery('user_teams');
+  var userShadowsQuery = useQuery('user_shadows');
+  var teams = teamsQuery.data;
+  var userShadows = userShadowsQuery.data;
+
+  var team = teams && teams.length > 0 ? teams[0] : null;
+  var updateTeam = useMutation('user_teams', 'update').mutate;
+
+  var slot1 = team ? team.slot1_key : null;
+  var slot2 = team ? team.slot2_key : null;
+  var slot3 = team ? team.slot3_key : null;
+
+  var ownedShadowKeys = useMemo(function() {
+    if (!userShadows || userShadows.length === 0) return [];
+    return userShadows.map(function(s) { return s.shadow_key; });
+  }, [userShadows]);
+
+  var availableShadows = useMemo(function() {
+    if (ownedShadowKeys.length > 0) {
+      return SHADOW_CATALOG.filter(function(s) { return ownedShadowKeys.indexOf(s.key) !== -1; });
+    }
+    return SHADOW_CATALOG.slice(0, 10);
+  }, [ownedShadowKeys]);
+
+  var handleSelectForSlot = function(slotNum) {
+    setActiveSlot(slotNum);
+    setShowPicker(true);
+  };
+
+  var handleAssignShadow = function(shadowKey) {
+    if (!team) return;
+    var data = {};
+    if (activeSlot === 1) data = { slot1_key: shadowKey };
+    else if (activeSlot === 2) data = { slot2_key: shadowKey };
+    else if (activeSlot === 3) data = { slot3_key: shadowKey };
+    updateTeam({ id: team.id, data: data })
+      .then(function() { teamsQuery.refetch(); setShowPicker(false); setActiveSlot(null); });
+  };
+
+  var handleClearSlot = function(slotNum) {
+    if (!team) return;
+    var data = {};
+    if (slotNum === 1) data = { slot1_key: null };
+    else if (slotNum === 2) data = { slot2_key: null };
+    else if (slotNum === 3) data = { slot3_key: null };
+    updateTeam({ id: team.id, data: data }).then(function() { teamsQuery.refetch(); });
+  };
+
+  var renderSlot = function(slotNum, shadowKey) {
+    var shadow = shadowKey ? getShadowByKey(shadowKey) : null;
+    return React.createElement(View, { style: { flex: 1, marginHorizontal: 5 } },
+      React.createElement(Text, { style: { color: textSecondary, fontSize: 11, fontWeight: '700', textAlign: 'center', marginBottom: 8, letterSpacing: 1 } }, 'SLOT ' + slotNum),
+      shadow ? React.createElement(View, { style: { borderRadius: 16, backgroundColor: cardColor, borderWidth: 2, borderColor: shadow.color + '55', overflow: 'hidden' } },
+        React.createElement(View, { style: { height: 110, backgroundColor: shadow.color + '18', justifyContent: 'center', alignItems: 'center' } },
+          React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 50, color: shadow.color })
+        ),
+        React.createElement(View, { style: { padding: 12 } },
+          React.createElement(Text, { style: { color: textPrimary, fontSize: 13, fontWeight: '900', textAlign: 'center', marginBottom: 4 } }, shadow.name),
+          React.createElement(Text, { style: { color: shadow.color, fontSize: 11, textAlign: 'center', marginBottom: 8 } }, shadow.element),
+          React.createElement(TouchableOpacity, {
+            onPress: function() { handleSelectForSlot(slotNum); },
+            style: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, paddingVertical: 6, alignItems: 'center', marginBottom: 4 },
+            componentId: 'btn-change-slot-' + slotNum
+          },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, fontWeight: '700' } }, 'Change')
+          ),
+          React.createElement(TouchableOpacity, {
+            onPress: function() { handleClearSlot(slotNum); },
+            style: { backgroundColor: 'rgba(220,38,38,0.1)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' },
+            componentId: 'btn-clear-slot-' + slotNum
+          },
+            React.createElement(Text, { style: { color: accentCrimson, fontSize: 11, fontWeight: '700' } }, 'Remove')
+          )
+        )
+      ) : React.createElement(TouchableOpacity, {
+        onPress: function() { handleSelectForSlot(slotNum); },
+        style: { borderRadius: 16, borderWidth: 2, borderColor: 'rgba(124,58,237,0.3)', borderStyle: 'dashed', backgroundColor: 'rgba(124,58,237,0.05)', justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+        componentId: 'btn-add-slot-' + slotNum
+      },
+        React.createElement(View, { style: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(124,58,237,0.15)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 } },
+          React.createElement(MaterialIcons, { name: 'add', size: 28, color: accentColor })
+        ),
+        React.createElement(Text, { style: { color: accentColor, fontSize: 12, fontWeight: '700' } }, 'Add Shadow')
+      )
+    );
+  };
+
+  var totalPower = [slot1, slot2, slot3].filter(Boolean).reduce(function(acc, key) { return acc + getShadowByKey(key).power; }, 0);
+  var totalSpeed = [slot1, slot2, slot3].filter(Boolean).reduce(function(acc, key) { return acc + getShadowByKey(key).speed; }, 0);
+  var teamCount = [slot1, slot2, slot3].filter(Boolean).length;
+
+  var scrollBottomPadding = Platform.OS === 'web' ? WEB_TAB_MENU_PADDING : (TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING);
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+    React.createElement(View, { style: { paddingTop: insets.top, backgroundColor: primaryColor, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.3)' } },
+      React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900', marginTop: 12, marginBottom: 4 } }, 'Team Builder'),
+      React.createElement(Text, { style: { color: textSecondary, fontSize: 13 } }, 'Configure your 3-Shadow battle team')
+    ),
+    React.createElement(ScrollView, { style: { flex: 1 }, contentContainerStyle: { paddingTop: 20, paddingBottom: scrollBottomPadding } },
+      React.createElement(View, { style: { flexDirection: 'row', marginHorizontal: 10, marginBottom: 24 } },
+        renderSlot(1, slot1),
+        renderSlot(2, slot2),
+        renderSlot(3, slot3)
+      ),
+      teamCount > 0 ? React.createElement(View, { style: { marginHorizontal: 16, backgroundColor: cardColor, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(124,58,237,0.2)', marginBottom: 20 } },
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 15, fontWeight: '800', marginBottom: 14 } }, 'Team Analysis'),
+        React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-around' } },
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginBottom: 4 } }, 'Team Power'),
+            React.createElement(Text, { style: { color: '#7c3aed', fontSize: 22, fontWeight: '900' } }, String(totalPower)),
+            React.createElement(View, { style: { height: 3, width: 40, backgroundColor: '#7c3aed', borderRadius: 2, marginTop: 4 } })
+          ),
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginBottom: 4 } }, 'Team Speed'),
+            React.createElement(Text, { style: { color: accentTeal, fontSize: 22, fontWeight: '900' } }, String(totalSpeed)),
+            React.createElement(View, { style: { height: 3, width: 40, backgroundColor: accentTeal, borderRadius: 2, marginTop: 4 } })
+          ),
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginBottom: 4 } }, 'Slots Filled'),
+            React.createElement(Text, { style: { color: teamCount === 3 ? '#10b981' : accentGold, fontSize: 22, fontWeight: '900' } }, teamCount + '/3'),
+            React.createElement(View, { style: { height: 3, width: 40, backgroundColor: teamCount === 3 ? '#10b981' : accentGold, borderRadius: 2, marginTop: 4 } })
+          )
+        )
+      ) : null,
+      teamCount < 3 ? React.createElement(View, { style: { marginHorizontal: 16, backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' } },
+        React.createElement(Text, { style: { color: accentGold, fontSize: 13, fontWeight: '700', textAlign: 'center' } }, '\u26a0\ufe0f Add ' + (3 - teamCount) + ' more Shadow' + (3 - teamCount !== 1 ? 's' : '') + ' to complete your team')
+      ) : React.createElement(View, { style: { marginHorizontal: 16, backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' } },
+        React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' } },
+          React.createElement(MaterialIcons, { name: 'check-circle', size: 18, color: '#10b981', style: { marginRight: 8 } }),
+          React.createElement(Text, { style: { color: '#10b981', fontSize: 13, fontWeight: '700' } }, 'Team ready for battle!')
+        )
+      )
+    ),
+    React.createElement(Modal, { visible: showPicker, animationType: 'slide', transparent: true, onRequestClose: function() { setShowPicker(false); } },
+      React.createElement(View, { style: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.7)', marginTop: insets.top } },
+        React.createElement(View, { style: { backgroundColor: primaryColor, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: 'rgba(124,58,237,0.3)', maxHeight: '80%', paddingBottom: insets.bottom + 16 } },
+          React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' } },
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 18, fontWeight: '900' } }, 'Select Shadow for Slot ' + activeSlot),
+            React.createElement(TouchableOpacity, { onPress: function() { setShowPicker(false); } },
+              React.createElement(MaterialIcons, { name: 'close', size: 22, color: textSecondary })
+            )
+          ),
+          React.createElement(FlatList, {
+            data: availableShadows,
+            keyExtractor: function(item) { return item.key; },
+            numColumns: 2,
+            contentContainerStyle: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 16 },
+            renderItem: function(info) {
+              var s = info.item;
+              var isInTeam = (slot1 === s.key || slot2 === s.key || slot3 === s.key);
+              return React.createElement(TouchableOpacity, {
+                onPress: isInTeam ? null : function() { handleAssignShadow(s.key); },
+                style: { flex: 1, margin: 5, borderRadius: 12, backgroundColor: cardColor2, borderWidth: 1, borderColor: isInTeam ? 'rgba(255,255,255,0.04)' : s.color + '44', opacity: isInTeam ? 0.4 : 1, padding: 12, alignItems: 'center' },
+                componentId: 'picker-shadow-' + s.key
+              },
+                React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 32, color: isInTeam ? textSecondary : s.color }),
+                React.createElement(Text, { style: { color: isInTeam ? textSecondary : textPrimary, fontSize: 12, fontWeight: '800', marginTop: 6, textAlign: 'center' } }, s.name),
+                React.createElement(Text, { style: { color: s.color, fontSize: 10, marginTop: 2 } }, s.element),
+                isInTeam ? React.createElement(Text, { style: { color: textSecondary, fontSize: 9, marginTop: 2 } }, 'In team') : null
+              );
+            }
+          })
+        )
+      )
+    )
+  );
+};
+// @end:TeamScreen
+
+// @section:EventsScreen @depends:[ThemeContext,constants-shadows,styles]
+var EventsScreen = function(props) {
+  var insets = useSafeAreaInsets();
+  var selectedEventState = useState(null);
+  var selectedEvent = selectedEventState[0];
+  var setSelectedEvent = selectedEventState[1];
+  var showDetailState = useState(false);
+  var showDetail = showDetailState[0];
+  var setShowDetail = showDetailState[1];
+  var scrollBottomPadding = Platform.OS === 'web' ? WEB_TAB_MENU_PADDING : (TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING);
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+    React.createElement(View, { style: { paddingTop: insets.top, backgroundColor: primaryColor, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.3)' } },
+      React.createElement(Text, { style: { color: textPrimary, fontSize: 26, fontWeight: '900', marginTop: 12, marginBottom: 4 } }, 'Events'),
+      React.createElement(Text, { style: { color: textSecondary, fontSize: 13 } }, 'Limited-time battles with unique rewards')
+    ),
+    React.createElement(ScrollView, { style: { flex: 1 }, contentContainerStyle: { paddingTop: 16, paddingBottom: scrollBottomPadding } },
+      React.createElement(View, { style: { paddingHorizontal: 16, marginBottom: 16 } },
+        React.createElement(View, { style: { backgroundColor: 'rgba(124,58,237,0.1)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(124,58,237,0.25)', flexDirection: 'row', alignItems: 'center' } },
+          React.createElement(MaterialIcons, { name: 'event', size: 22, color: accentColor, style: { marginRight: 12 } }),
+          React.createElement(View, { style: { flex: 1 } },
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '800' } }, 'Season 3: Shadow Uprising'),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 12, marginTop: 2 } }, '14 days remaining in season')
+          )
+        )
+      ),
+      React.createElement(Text, { style: { color: textPrimary, fontSize: 17, fontWeight: '900', marginBottom: 4, marginLeft: 16 } }, 'Active Events'),
+      React.createElement(Text, { style: { color: textSecondary, fontSize: 12, marginBottom: 14, marginLeft: 16 } }, 'Participate now for exclusive rewards'),
+      EVENTS_CATALOG.filter(function(e) { return e.isActive; }).map(function(evt) {
+        return React.createElement(TouchableOpacity, {
+          key: evt.key,
+          onPress: function() { setSelectedEvent(evt); setShowDetail(true); },
+          style: { marginHorizontal: 16, marginBottom: 12, borderRadius: 18, backgroundColor: cardColor, borderWidth: 1, borderColor: evt.color + '44', overflow: 'hidden' },
+          componentId: 'event-card-' + evt.key
+        },
+          React.createElement(View, { style: { height: 8, backgroundColor: evt.color } }),
+          React.createElement(View, { style: { padding: 16 } },
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 } },
+              React.createElement(View, { style: { flex: 1, marginRight: 12 } },
+                React.createElement(Text, { style: { color: textPrimary, fontSize: 18, fontWeight: '900', marginBottom: 4 } }, evt.name),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 13, lineHeight: 18 } }, evt.description)
+              ),
+              React.createElement(View, { style: { width: 52, height: 52, borderRadius: 26, backgroundColor: evt.color + '22', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: evt.color + '44' } },
+                React.createElement(MaterialIcons, { name: evt.rewardIcon, size: 26, color: evt.color })
+              )
+            ),
+            React.createElement(View, { style: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 10, marginBottom: 10 } },
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+                React.createElement(MaterialIcons, { name: 'tune', size: 14, color: evt.color, style: { marginRight: 6 } }),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 12 } }, 'Rule: '),
+                React.createElement(Text, { style: { color: textPrimary, fontSize: 12, fontWeight: '700' } }, evt.modifier)
+              )
+            ),
+            React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } },
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+                React.createElement(MaterialIcons, { name: 'card-giftcard', size: 14, color: accentGold }),
+                React.createElement(Text, { style: { color: accentGold, fontSize: 13, fontWeight: '800', marginLeft: 4 } }, evt.reward)
+              ),
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 } },
+                React.createElement(MaterialIcons, { name: 'timer', size: 12, color: accentCrimson }),
+                React.createElement(Text, { style: { color: accentCrimson, fontSize: 11, fontWeight: '700', marginLeft: 4 } }, evt.duration)
+              )
+            )
+          )
+        );
+      }),
+      React.createElement(Text, { style: { color: textPrimary, fontSize: 17, fontWeight: '900', marginBottom: 4, marginLeft: 16, marginTop: 8 } }, 'Coming Soon'),
+      EVENTS_CATALOG.filter(function(e) { return !e.isActive; }).map(function(evt) {
+        return React.createElement(View, {
+          key: evt.key,
+          style: { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, backgroundColor: cardColor2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', padding: 16, opacity: 0.6, flexDirection: 'row', alignItems: 'center' }
+        },
+          React.createElement(View, { style: { width: 42, height: 42, borderRadius: 21, backgroundColor: evt.color + '15', justifyContent: 'center', alignItems: 'center', marginRight: 12 } },
+            React.createElement(MaterialIcons, { name: 'lock', size: 20, color: textSecondary })
+          ),
+          React.createElement(View, { style: { flex: 1 } },
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 15, fontWeight: '800' } }, evt.name),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 12, marginTop: 2 } }, evt.duration)
+          )
+        );
+      })
+    ),
+    React.createElement(Modal, { visible: showDetail, animationType: 'slide', transparent: true, onRequestClose: function() { setShowDetail(false); } },
+      selectedEvent ? React.createElement(View, { style: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.8)', marginTop: insets.top } },
+        React.createElement(View, { style: { backgroundColor: primaryColor, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: selectedEvent.color + '44', padding: 24, paddingBottom: insets.bottom + 24 } },
+          React.createElement(View, { style: { height: 5, width: 50, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, alignSelf: 'center', marginBottom: 20 } }),
+          React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 } },
+            React.createElement(View, { style: { width: 56, height: 56, borderRadius: 28, backgroundColor: selectedEvent.color + '22', justifyContent: 'center', alignItems: 'center', marginRight: 14, borderWidth: 1, borderColor: selectedEvent.color + '55' } },
+              React.createElement(MaterialIcons, { name: selectedEvent.rewardIcon, size: 28, color: selectedEvent.color })
+            ),
+            React.createElement(View, null,
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 22, fontWeight: '900' } }, selectedEvent.name),
+              React.createElement(Text, { style: { color: selectedEvent.color, fontSize: 13, fontWeight: '700', marginTop: 2 } }, selectedEvent.duration)
+            )
+          ),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 } }, selectedEvent.description),
+          React.createElement(View, { style: { backgroundColor: cardColor2, borderRadius: 14, padding: 14, marginBottom: 20 } },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 10 } }, 'EVENT MODIFIERS'),
+            React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+              React.createElement(MaterialIcons, { name: 'auto-fix-high', size: 18, color: selectedEvent.color, style: { marginRight: 8 } }),
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '700' } }, selectedEvent.modifier)
+            )
+          ),
+          React.createElement(View, { style: { backgroundColor: 'rgba(245,158,11,0.1)', borderRadius: 14, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' } },
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 4 } }, 'COMPLETION REWARD'),
+            React.createElement(Text, { style: { color: accentGold, fontSize: 18, fontWeight: '900' } }, selectedEvent.reward)
+          ),
+          React.createElement(TouchableOpacity, {
+            onPress: function() { setShowDetail(false); },
+            style: { backgroundColor: selectedEvent.color, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+            componentId: 'btn-join-event'
+          },
+            React.createElement(Text, { style: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' } }, 'Enter Event')
+          )
+        )
+      ) : null
+    )
+  );
+};
+// @end:EventsScreen
+
+// @section:ProfileScreen @depends:[ThemeContext,constants-shadows,styles]
+var ProfileScreen = function(props) {
+  var insets = useSafeAreaInsets();
+  var tabState = useState('stats');
+  var activeTab = tabState[0];
+  var setActiveTab = tabState[1];
+  var editNameState = useState(false);
+  var editingName = editNameState[0];
+  var setEditingName = editNameState[1];
+  var newNameState = useState('');
+  var newName = newNameState[0];
+  var setNewName = newNameState[1];
+  var shareHook = useShare();
+  var shareFunc = shareHook.share;
+
+  var playersQuery = useQuery('players');
+  var matchRecordsQuery = useQuery('match_records');
+  var players = playersQuery.data;
+  var matchRecords = matchRecordsQuery.data;
+
+  var player = players && players.length > 0 ? players[0] : null;
+  var updatePlayer = useMutation('players', 'update').mutate;
+  var rank = player ? getRankByPoints(player.season_points || 0) : RANKS[0];
+
+  var recentMatches = useMemo(function() {
+    if (!matchRecords || matchRecords.length === 0) return [];
+    return matchRecords.slice(-8).reverse();
+  }, [matchRecords]);
+
+  var handleSaveName = function() {
+    if (!newName.trim() || newName.trim().length < 2 || !player) return;
+    updatePlayer({ id: player.id, data: { name: newName.trim() } })
+      .then(function() { playersQuery.refetch(); setEditingName(false); });
+  };
+
+  var handleShare = function() {
+    if (!player) return;
+    shareFunc({ message: 'I am ' + player.name + ' on Shadowfall! ' + rank.name + ' rank with ' + (player.wins || 0) + ' wins and ' + (player.season_points || 0) + ' season points. Can you beat me in the arena?' }).then(function(r) {
+      if (r.error) { Platform.OS === 'web' ? window.alert(r.error) : Alert.alert('Error', r.error); }
+    });
+  };
+
+  var scrollBottomPadding = Platform.OS === 'web' ? WEB_TAB_MENU_PADDING : (TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING);
+  var winRate = player && (player.wins + player.losses) > 0 ? Math.round((player.wins / (player.wins + player.losses)) * 100) : 0;
+
+  var leaderboardWithPlayer = useMemo(function() {
+    if (!player) return FAKE_LEADERBOARD;
+    var playerPoints = player.season_points || 0;
+    var playerRankNum = 1;
+    for (var i = 0; i < FAKE_LEADERBOARD.length; i++) {
+      if (playerPoints < FAKE_LEADERBOARD[i].points) playerRankNum = i + 2;
+    }
+    playerRankNum = Math.min(playerRankNum, FAKE_LEADERBOARD.length + 1);
+    return FAKE_LEADERBOARD;
+  }, [player]);
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor } },
+    React.createElement(View, { style: { paddingTop: insets.top, backgroundColor: primaryColor, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.3)' } },
+      player ? React.createElement(View, { style: { marginTop: 12 } },
+        React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 } },
+          React.createElement(View, { style: { flex: 1 } },
+            editingName ? React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+              React.createElement(TextInput, {
+                value: newName,
+                onChangeText: setNewName,
+                placeholder: 'New name...',
+                placeholderTextColor: 'rgba(148,163,184,0.5)',
+                autoCapitalize: 'none',
+                autoCorrect: false,
+                maxLength: 20,
+                style: { flex: 1, backgroundColor: cardColor2, color: textPrimary, fontSize: 18, fontWeight: '900', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: accentColor + '66' },
+                componentId: 'input-new-name'
+              }),
+              React.createElement(TouchableOpacity, { onPress: handleSaveName, style: { backgroundColor: accentColor, borderRadius: 10, padding: 10 }, componentId: 'btn-save-name' },
+                React.createElement(MaterialIcons, { name: 'check', size: 18, color: '#fff' })
+              ),
+              React.createElement(TouchableOpacity, { onPress: function() { setEditingName(false); }, style: { padding: 10, marginLeft: 4 }, componentId: 'btn-cancel-name' },
+                React.createElement(MaterialIcons, { name: 'close', size: 18, color: textSecondary })
+              )
+            ) : React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center' } },
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 24, fontWeight: '900', marginRight: 8 } }, player.name),
+              React.createElement(TouchableOpacity, { onPress: function() { setNewName(player.name); setEditingName(true); }, componentId: 'btn-edit-name' },
+                React.createElement(MaterialIcons, { name: 'edit', size: 16, color: textSecondary })
+              )
+            ),
+            React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginTop: 6 } },
+              React.createElement(MaterialIcons, { name: rank.icon, size: 14, color: rank.color }),
+              React.createElement(Text, { style: { color: rank.color, fontSize: 13, fontWeight: '800', marginLeft: 4 } }, rank.name + ' \u2022 ' + (player.season_points || 0) + ' pts')
+            )
+          ),
+          React.createElement(TouchableOpacity, { onPress: handleShare, style: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(124,58,237,0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(124,58,237,0.3)' }, componentId: 'btn-share-profile' },
+            React.createElement(MaterialIcons, { name: 'share', size: 18, color: accentColor })
+          )
+        ),
+        React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: cardColor, borderRadius: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' } },
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: '#10b981', fontSize: 20, fontWeight: '900' } }, String(player.wins || 0)),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Wins')
+          ),
+          React.createElement(View, { style: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)' } }),
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: accentCrimson, fontSize: 20, fontWeight: '900' } }, String(player.losses || 0)),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Losses')
+          ),
+          React.createElement(View, { style: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)' } }),
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: accentGold, fontSize: 20, fontWeight: '900' } }, winRate + '%'),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Win Rate')
+          ),
+          React.createElement(View, { style: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)' } }),
+          React.createElement(View, { style: { alignItems: 'center' } },
+            React.createElement(Text, { style: { color: accentColor, fontSize: 20, fontWeight: '900' } }, String(player.currency || 0)),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, 'Shards')
+          )
+        )
+      ) : React.createElement(ActivityIndicator, { color: accentColor, style: { marginTop: 12 } })
+    ),
+    React.createElement(View, { style: { flexDirection: 'row', backgroundColor: primaryColor, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(124,58,237,0.2)' } },
+      ['stats', 'history', 'ranks'].map(function(t) {
+        var labels = { stats: 'Rank Progress', history: 'Match History', ranks: 'Leaderboard' };
+        var active = activeTab === t;
+        return React.createElement(TouchableOpacity, {
+          key: t,
+          onPress: function() { setActiveTab(t); },
+          style: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10, backgroundColor: active ? accentColor + '22' : 'transparent', borderWidth: active ? 1 : 0, borderColor: active ? accentColor + '66' : 'transparent' },
+          componentId: 'tab-profile-' + t
+        },
+          React.createElement(Text, { style: { color: active ? accentColor : textSecondary, fontSize: 12, fontWeight: active ? '800' : '600' } }, labels[t])
+        );
+      })
+    ),
+    React.createElement(ScrollView, { style: { flex: 1 }, contentContainerStyle: { paddingTop: 16, paddingBottom: scrollBottomPadding } },
+      activeTab === 'stats' ? React.createElement(View, { style: { paddingHorizontal: 16 } },
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 14 } }, 'Rank Tiers'),
+        RANKS.map(function(r) {
+          var isCurrent = player && getRankByPoints(player.season_points || 0).key === r.key;
+          var nextRank = RANKS[RANKS.indexOf(r) + 1];
+          var progress = player ? Math.min(100, Math.max(0, ((player.season_points || 0) - r.minPoints) / ((nextRank ? nextRank.minPoints : 9999) - r.minPoints) * 100)) : 0;
+          return React.createElement(View, {
+            key: r.key,
+            style: { backgroundColor: isCurrent ? r.color + '15' : cardColor, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: isCurrent ? 1 : 1, borderColor: isCurrent ? r.color + '66' : 'rgba(255,255,255,0.06)' }
+          },
+            React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: isCurrent ? 10 : 0 } },
+              React.createElement(MaterialIcons, { name: r.icon, size: 22, color: isCurrent ? r.color : textSecondary, style: { marginRight: 10 } }),
+              React.createElement(View, { style: { flex: 1 } },
+                React.createElement(Text, { style: { color: isCurrent ? textPrimary : textSecondary, fontSize: 15, fontWeight: '800' } }, r.name),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, r.minPoints + '+ pts')
+              ),
+              isCurrent ? React.createElement(View, { style: { backgroundColor: r.color + '22', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 } },
+                React.createElement(Text, { style: { color: r.color, fontSize: 11, fontWeight: '900' } }, 'CURRENT')
+              ) : null
+            ),
+            isCurrent && nextRank ? React.createElement(View, null,
+              React.createElement(View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 } },
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, String(player ? player.season_points || 0 : 0) + ' pts'),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 11 } }, nextRank.minPoints + ' pts')
+              ),
+              React.createElement(View, { style: { height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3 } },
+                React.createElement(View, { style: { width: progress + '%', height: 6, backgroundColor: r.color, borderRadius: 3 } })
+              )
+            ) : null
+          );
+        })
+      ) : null,
+      activeTab === 'history' ? React.createElement(View, { style: { paddingHorizontal: 16 } },
+        recentMatches.length === 0 ? React.createElement(View, { style: { alignItems: 'center', paddingTop: 40 } },
+          React.createElement(MaterialIcons, { name: 'history', size: 48, color: 'rgba(255,255,255,0.1)' }),
+          React.createElement(Text, { style: { color: textSecondary, fontSize: 16, marginTop: 12, textAlign: 'center' } }, 'No matches played yet.\nEnter the arena to begin!'),
+        ) : recentMatches.map(function(match, idx) {
+          var won = match.result === 'win';
+          return React.createElement(View, {
+            key: match.id || String(idx),
+            style: { backgroundColor: cardColor, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: won ? 'rgba(16,185,129,0.25)' : 'rgba(220,38,38,0.2)', flexDirection: 'row', alignItems: 'center' }
+          },
+            React.createElement(View, { style: { width: 44, height: 44, borderRadius: 22, backgroundColor: won ? 'rgba(16,185,129,0.15)' : 'rgba(220,38,38,0.15)', justifyContent: 'center', alignItems: 'center', marginRight: 14 } },
+              React.createElement(MaterialIcons, { name: won ? 'emoji-events' : 'close', size: 22, color: won ? '#10b981' : accentCrimson })
+            ),
+            React.createElement(View, { style: { flex: 1 } },
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '800' } }, won ? 'Victory' : 'Defeat'),
+              React.createElement(Text, { style: { color: textSecondary, fontSize: 12, marginTop: 2 } }, match.event_key ? 'Event Match' : 'Ranked Match')
+            ),
+            React.createElement(Text, { style: { color: won ? '#10b981' : accentCrimson, fontSize: 16, fontWeight: '900' } }, (won ? '+' : '') + String(match.points || 0) + ' pts')
+          );
+        })
+      ) : null,
+      activeTab === 'ranks' ? React.createElement(View, { style: { paddingHorizontal: 16 } },
+        React.createElement(Text, { style: { color: textPrimary, fontSize: 16, fontWeight: '900', marginBottom: 14 } }, 'Global Leaderboard'),
+        player ? React.createElement(View, { style: { backgroundColor: 'rgba(124,58,237,0.12)', borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(124,58,237,0.4)', flexDirection: 'row', alignItems: 'center' } },
+          React.createElement(View, { style: { width: 36, height: 36, borderRadius: 18, backgroundColor: accentColor, justifyContent: 'center', alignItems: 'center', marginRight: 12 } },
+            React.createElement(MaterialIcons, { name: 'person', size: 20, color: '#fff' })
+          ),
+          React.createElement(View, { style: { flex: 1 } },
+            React.createElement(Text, { style: { color: '#a855f7', fontSize: 11, fontWeight: '700' } }, 'YOUR RANKING'),
+            React.createElement(Text, { style: { color: textPrimary, fontSize: 15, fontWeight: '900' } }, player.name),
+            React.createElement(Text, { style: { color: textSecondary, fontSize: 12 } }, rank.name + ' \u2022 ' + (player.wins || 0) + ' wins')
+          ),
+          React.createElement(Text, { style: { color: accentColor, fontSize: 22, fontWeight: '900' } }, String(player.season_points || 0) + ' pts')
+        ) : null,
+        leaderboardWithPlayer.map(function(entry, idx) {
+          var posColors = ['#f59e0b', '#94a3b8', '#b45309'];
+          var posColor = idx < 3 ? posColors[idx] : textSecondary;
+          var s = getShadowByKey(entry.shadowKey);
+          return React.createElement(View, {
+            key: String(idx),
+            style: { backgroundColor: cardColor, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: idx < 3 ? posColor + '33' : 'rgba(255,255,255,0.06)', flexDirection: 'row', alignItems: 'center' }
+          },
+            React.createElement(View, { style: { width: 36, height: 36, borderRadius: 18, backgroundColor: posColor + '22', justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: posColor + '55' } },
+              React.createElement(Text, { style: { color: posColor, fontSize: 14, fontWeight: '900' } }, '#' + entry.rank)
+            ),
+            React.createElement(View, { style: { flex: 1 } },
+              React.createElement(Text, { style: { color: textPrimary, fontSize: 14, fontWeight: '800' } }, entry.name),
+              React.createElement(View, { style: { flexDirection: 'row', alignItems: 'center', marginTop: 2 } },
+                React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 12, color: s.color }),
+                React.createElement(Text, { style: { color: textSecondary, fontSize: 11, marginLeft: 4 } }, s.name + ' \u2022 ' + entry.wins + ' wins')
+              )
+            ),
+            React.createElement(Text, { style: { color: idx < 3 ? posColor : textPrimary, fontSize: 15, fontWeight: '900' } }, String(entry.points) + ' pts')
+          );
+        })
+      ) : null
+    )
+  );
+};
+// @end:ProfileScreen
+
+// @section:TabNavigator @depends:[BattleScreen,ShadowsScreen,TeamScreen,EventsScreen,ProfileScreen,navigation-setup]
+var TabNavigator = function() {
+  var insets = useSafeAreaInsets();
+  return React.createElement(View, { style: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' } },
+    React.createElement(Tab.Navigator, {
+      screenOptions: {
+        headerShown: false,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 0,
+          height: Platform.OS === 'web' ? TAB_MENU_HEIGHT : TAB_MENU_HEIGHT + insets.bottom,
+          borderTopWidth: 0,
+          backgroundColor: '#0d0d24',
+          borderTopColor: 'rgba(124,58,237,0.3)',
+          borderTopWidth: 1
+        },
+        tabBarItemStyle: { padding: 0 },
+        tabBarActiveTintColor: accentColor,
+        tabBarInactiveTintColor: 'rgba(148,163,184,0.5)',
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginBottom: Platform.OS === 'web' ? 0 : 4 }
+      }
+    },
+      React.createElement(Tab.Screen, {
+        name: 'Battle',
+        component: BattleScreen,
+        options: {
+          tabBarLabel: 'Battle',
+          tabBarIcon: function(p) { return React.createElement(MaterialIcons, { name: 'sports-mma', size: 22, color: p.color }); }
+        }
+      }),
+      React.createElement(Tab.Screen, {
+        name: 'Shadows',
+        component: ShadowsScreen,
+        options: {
+          tabBarLabel: 'Shadows',
+          tabBarIcon: function(p) { return React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 22, color: p.color }); }
+        }
+      }),
+      React.createElement(Tab.Screen, {
+        name: 'Team',
+        component: TeamScreen,
+        options: {
+          tabBarLabel: 'Team',
+          tabBarIcon: function(p) { return React.createElement(MaterialIcons, { name: 'group', size: 22, color: p.color }); }
+        }
+      }),
+      React.createElement(Tab.Screen, {
+        name: 'Events',
+        component: EventsScreen,
+        options: {
+          tabBarLabel: 'Events',
+          tabBarIcon: function(p) { return React.createElement(MaterialIcons, { name: 'event', size: 22, color: p.color }); }
+        }
+      }),
+      React.createElement(Tab.Screen, {
+        name: 'Profile',
+        component: ProfileScreen,
+        options: {
+          tabBarLabel: 'Profile',
+          tabBarIcon: function(p) { return React.createElement(MaterialIcons, { name: 'person', size: 22, color: p.color }); }
+        }
+      })
+    )
+  );
+};
+// @end:TabNavigator
+
+// @section:LoadingScreen @depends:[styles]
+var LoadingScreen = function(props) {
+  var navigation = props.navigation;
+  var insets = useSafeAreaInsets();
+  var playersQuery = useQuery('players');
+  var players = playersQuery.data;
+  var loading = playersQuery.loading;
+
+  useEffect(function() {
+    if (loading) return;
+    if (players && players.length > 0) {
+      navigation.replace('MainApp');
+    } else {
+      navigation.replace('Onboarding');
+    }
+  }, [loading, players]);
+
+  return React.createElement(View, { style: { flex: 1, backgroundColor: backgroundColor, justifyContent: 'center', alignItems: 'center' } },
+    React.createElement(View, { style: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(124,58,237,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: accentColor } },
+      React.createElement(MaterialCommunityIcons, { name: 'sword-cross', size: 40, color: accentColor })
+    ),
+    React.createElement(Text, { style: { color: textPrimary, fontSize: 36, fontWeight: '900', letterSpacing: 2, marginBottom: 8 } }, 'SHADOWFALL'),
+    React.createElement(ActivityIndicator, { size: 'small', color: accentColor, style: { marginTop: 12 } })
+  );
+};
+// @end:LoadingScreen
+
+// @section:styles @depends:[theme]
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: backgroundColor
+  },
+  headerText: {
+    color: textPrimary,
+    fontSize: 24,
+    fontWeight: '900'
+  }
+});
+// @end:styles
+
+// @section:return @depends:[ThemeProvider,LoadingScreen,OnboardingScreen,TabNavigator]
+return React.createElement(ThemeProvider, null,
+  React.createElement(View, { style: { flex: 1, width: '100%', height: '100%' } },
+    React.createElement(StatusBar, { barStyle: 'light-content', backgroundColor: backgroundColor }),
+    React.createElement(Stack.Navigator, { screenOptions: { headerShown: false } },
+      React.createElement(Stack.Screen, { name: 'Loading', component: LoadingScreen }),
+      React.createElement(Stack.Screen, { name: 'Onboarding', component: OnboardingScreen }),
+      React.createElement(Stack.Screen, { name: 'MainApp', component: TabNavigator })
+    )
+  )
+);
+// @end:return
+};
+return ComponentFunctio
